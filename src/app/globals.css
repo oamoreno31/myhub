@@ -1,0 +1,182 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* =====================================================================
+   Tokens de Plata Clara (mismos del mockup). Claro por defecto,
+   oscuro con la clase .dark (next-themes).
+   ===================================================================== */
+:root {
+  --radius: 0.875rem;
+
+  --background: #f4f1ea;
+  --foreground: #1a1d1b;
+  --card: #ffffff;
+  --card-foreground: #1a1d1b;
+  --popover: #ffffff;
+  --popover-foreground: #1a1d1b;
+  --primary: #1f5a45;
+  --primary-foreground: #ffffff;
+  --secondary: #eae6dc;
+  --secondary-foreground: #1a1d1b;
+  --muted: #edeae3;
+  --muted-foreground: #5a5f5b;
+  --accent: #e2efe7;
+  --accent-foreground: #1f5a45;
+  --destructive: #a3261b;
+  --destructive-soft: #fbe3e0;
+  --warning: #8f4b00;
+  --warning-soft: #fbebd4;
+  --success: #1f5a45;
+  --success-soft: #e2efe7;
+  --info: #1d4e89;
+  --info-soft: #e1eaf5;
+  --border: #e2ddd1;
+  --input: #d5cfc2;
+  --ring: #1f5a45;
+
+  --sidebar: #13231c;
+  --sidebar-foreground: #d8e3dc;
+  --sidebar-muted: #a9bdb2;
+  --sidebar-accent: #1f5a45;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #22372e;
+  --brand: #7fc4a0;
+
+  /* Series de gráficas: paleta categórica validada (CVD ΔE ≥ 8 entre vecinas, visión normal ≥ 15)
+     sobre la tarjeta blanca. Se asignan en este orden fijo, nunca cíclico. Las series 3, 4 y 5 quedan
+     bajo 3:1 de contraste: por eso toda gráfica lleva leyenda, etiquetas o tabla con los valores. */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-7: #4a3aa7;
+  --chart-8: #e34948;
+  /* "Otras" (gris de énfasis): validado como vecina de la serie 5 (CVD ΔE ≥ 13 claro / 9,6 oscuro) */
+  --chart-otras: #6f6c66;
+  --chart-grid: #e6e3db;
+  --chart-eje: #c9c5bb;
+}
+
+.dark {
+  --background: #0f1714;
+  --foreground: #e8edea;
+  --card: #16211c;
+  --card-foreground: #e8edea;
+  --popover: #16211c;
+  --popover-foreground: #e8edea;
+  --primary: #7fc4a0;
+  --primary-foreground: #0f1714;
+  --secondary: #1e2a25;
+  --secondary-foreground: #e8edea;
+  --muted: #1e2a25;
+  --muted-foreground: #9dada5;
+  --accent: #1f3a2f;
+  --accent-foreground: #b7e0ca;
+  --destructive: #f2b8b0;
+  --destructive-soft: #3a1e1b;
+  --warning: #e9a24b;
+  --warning-soft: #3a2a14;
+  --success: #7fc4a0;
+  --success-soft: #1f3a2f;
+  --info: #9dbce3;
+  --info-soft: #1b2a3c;
+  --border: #2a3832;
+  --input: #34443d;
+  --ring: #7fc4a0;
+
+  --sidebar: #0b120f;
+  --sidebar-foreground: #d8e3dc;
+  --sidebar-muted: #8fa399;
+  --sidebar-accent: #1f5a45;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #1a2621;
+  --brand: #7fc4a0;
+
+  /* Mismos tonos, un paso ajustados para la tarjeta oscuro (validados contra #16211c, todos ≥ 3:1) */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #008300;
+  --chart-7: #9085e9;
+  --chart-8: #e66767;
+  --chart-otras: #a2a8a4;
+  --chart-grid: #24312b;
+  --chart-eje: #3a4842;
+}
+
+@theme inline {
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces Variable", Georgia, serif;
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-brand: var(--brand);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+  --color-chart-otras: var(--chart-otras);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-eje: var(--chart-eje);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
