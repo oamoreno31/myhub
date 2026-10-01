@@ -8,7 +8,9 @@ import {
   SeccionCuentas,
   SeccionObligaciones,
 } from "@/components/configuracion/secciones";
+import { SeccionDatos } from "@/components/configuracion/seccion-datos";
 import { EncabezadoPagina } from "@/components/layout/encabezado-pagina";
+import { BUCKET_RESPALDOS } from "@/lib/respaldos";
 import { Card } from "@/components/ui/card";
 import { obtenerCatalogos } from "@/lib/datos";
 import { type Frecuencia, hoyISO } from "@/lib/domain/obligaciones";
@@ -24,6 +26,7 @@ const SECCIONES = [
   { clave: "cuentas", etiqueta: "Cuentas" },
   { clave: "categorias", etiqueta: "Categorías" },
   { clave: "preferencias", etiqueta: "Preferencias" },
+  { clave: "datos", etiqueta: "Datos y respaldo" },
 ] as const;
 
 type Seccion = (typeof SECCIONES)[number]["clave"];
@@ -99,6 +102,17 @@ export default async function ConfiguracionPage({ searchParams }: PageProps<"/co
         periodoActual={periodoActual}
       />
     );
+  } else if (seccion === "datos") {
+    const { data: sesion } = await supabase.auth.getClaims();
+    const { data: archivos } = await supabase.storage
+      .from(BUCKET_RESPALDOS)
+      .list(sesion?.claims.sub ?? "-", { limit: 100 });
+    const semanales = (archivos ?? [])
+      .map((a) => a.name)
+      .filter((n) => /^\d{4}-\d{2}-\d{2}\.json$/.test(n))
+      .sort()
+      .reverse();
+    contenido = <SeccionDatos periodoActual={periodoActual} semanales={semanales} />;
   } else {
     const { data } = await supabase.from("parametros").select("meta_ahorro_pct, recordatorios_email").maybeSingle();
     contenido = (
@@ -115,7 +129,7 @@ export default async function ConfiguracionPage({ searchParams }: PageProps<"/co
     <div className="flex flex-col gap-6">
       <EncabezadoPagina
         titulo="Configuración"
-        descripcion="Tus obligaciones recurrentes, cuentas, categorías y preferencias."
+        descripcion="Tus obligaciones recurrentes, cuentas, categorías, preferencias y tus datos."
       />
       <nav aria-label="Secciones de configuración" className="-mx-4 overflow-x-auto px-4">
         <ul className="flex w-max gap-1 rounded-xl bg-secondary p-1">

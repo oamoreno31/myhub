@@ -75,7 +75,10 @@ export function SeccionCuentas({ cuentas, hoy }: { cuentas: CuentaFila[]; hoy: s
               {c.fecha_saldo_inicial
                 ? ` al ${c.fecha_saldo_inicial.slice(8)}/${c.fecha_saldo_inicial.slice(5, 7)}/${c.fecha_saldo_inicial.slice(0, 4)}`
                 : ""}{" "}
-              · {c.n_movimientos} movimientos
+              ·{" "}
+              <Link href={`/movimientos?cuenta=${c.id}`} className="font-semibold text-primary hover:underline">
+                {c.n_movimientos} movimientos
+              </Link>
             </span>
             <div className="flex gap-2 pt-1">
               <Button size="sm" variant="outline" onClick={() => setHoja({ cuenta: c })}>

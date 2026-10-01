@@ -178,6 +178,18 @@ id · user_id · entidad · entidad_id · accion · antes jsonb · despues jsonb
 | `cuotas_de_compra(...)`, `corte_de_compra(...)` | Calendario de cuotas y corte de una compra (F2, espejo de TS). |
 | `crear_tarjeta(...)` | Crea la cuenta tipo tarjeta y la tarjeta en una sola operación (F2). |
 | `estimar_monto(p_obligacion uuid)` | Promedio de los últimos 3 pagos para obligaciones variables. |
+| `exportar_respaldo()` (F6) | JSON `{app: "plata-clara", version: 1, tablas: {…}}` con todas las tablas del usuario de la sesión. `exportar_respaldo_usuario(p_user)` es la misma para el cron (solo `service_role`). |
+| `restaurar_respaldo(p_datos jsonb)` (F6) | Reemplaza **todos** los datos del usuario por los del respaldo en una transacción: valida formato y versión, fuerza `user_id` = sesión, inserta en orden (padres antes que hijas, referencias circulares al final), rechaza referencias a datos de otro usuario y deja constancia en `bitacora`. |
+| `recordatorios_hoy(p_hoy date)` (F6) | Por usuario con recordatorios activos: obligaciones vencidas o que vencen en ≤ 3 días, con lo pendiente (solo `service_role`, para el correo diario). |
+
+### 5.1 Storage (F6)
+
+| Bucket | Contenido | Políticas |
+|---|---|---|
+| `comprobantes` | Fotos (JPG, PNG, WEBP, HEIC) o PDF ≤ 5 MB en `{user_id}/{uuid}.ext`; la ruta queda en `movimientos.adjunto_path` / `compras_tc.adjunto_path` (y en `v_movimientos` / `v_compras_tc`). | Dueño: leer y escribir solo en su carpeta. Se abren con URL firmada de 60 s. |
+| `respaldos` | `{user_id}/AAAA-MM-DD.json` del cron dominical (retención 8 semanas). | Dueño: solo lectura; escribe el cron (`service_role`). |
+
+> Los buckets y sus políticas se crean en la migración `20261002000100_complementos.sql` solo si existe el esquema `storage` de Supabase (en las pruebas con PGlite se omiten).
 
 ## 6. Triggers
 

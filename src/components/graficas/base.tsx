@@ -1,6 +1,7 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { Desplazable } from "@/components/ui/desplazable";
+import { type PointerEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { formatearCOP } from "@/lib/domain/dinero";
 import { cn } from "@/lib/utils";
 
@@ -107,6 +108,75 @@ export function Leyenda({
   );
 }
 
+/**
+ * Capa interactiva sobre el área de datos (fuera del SVG, que queda como imagen): un "slider"
+ * accesible que recorre los meses con el puntero o con las flechas / Inicio / Fin. Un solo punto
+ * de tabulación por gráfica, con el valor del mes activo leído por el lector de pantalla.
+ */
+export function ZonaInteractiva({
+  izq,
+  arriba,
+  ancho,
+  alto,
+  n,
+  activo,
+  setActivo,
+  indiceEn,
+  etiqueta,
+  textoValor,
+}: {
+  izq: number;
+  arriba: number;
+  ancho: number;
+  alto: number;
+  n: number;
+  activo: number | null;
+  setActivo: (i: number | null) => void;
+  /** Índice bajo el puntero, dada la posición x dentro de la zona y su ancho. */
+  indiceEn: (x: number, ancho: number) => number;
+  etiqueta: string;
+  textoValor: (i: number) => string;
+}) {
+  const actual = activo ?? n - 1;
+  const ir = (i: number) => setActivo(Math.min(Math.max(i, 0), n - 1));
+  const mover = (e: PointerEvent<HTMLDivElement>) => {
+    const caja = e.currentTarget.getBoundingClientRect();
+    ir(indiceEn(e.clientX - caja.left, caja.width));
+  };
+  return (
+    <div
+      role="slider"
+      tabIndex={0}
+      aria-label={`${etiqueta}. Usa las flechas para recorrer los meses.`}
+      aria-orientation="horizontal"
+      aria-valuemin={0}
+      aria-valuemax={Math.max(n - 1, 0)}
+      aria-valuenow={actual}
+      aria-valuetext={n > 0 ? textoValor(actual) : ""}
+      className="absolute cursor-crosshair rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      style={{ left: izq, top: arriba, width: ancho, height: alto }}
+      onPointerMove={mover}
+      onPointerDown={mover}
+      onFocus={() => setActivo(actual)}
+      onBlur={() => setActivo(null)}
+      onKeyDown={(e) => {
+        const teclas: Record<string, number> = {
+          ArrowLeft: actual - 1,
+          ArrowDown: actual - 1,
+          ArrowRight: actual + 1,
+          ArrowUp: actual + 1,
+          Home: 0,
+          End: n - 1,
+        };
+        if (e.key in teclas) {
+          e.preventDefault();
+          ir(teclas[e.key]);
+        }
+      }}
+    />
+  );
+}
+
 /** Tooltip: el valor es lo fuerte; la serie va con una línea corta de su color. */
 export function Tooltip({
   x,
@@ -170,7 +240,7 @@ export function TablaDatos({
   return (
     <details className="group text-sm">
       <summary className="cursor-pointer text-xs font-semibold text-primary hover:underline">Ver tabla</summary>
-      <div className="mt-2 overflow-x-auto">
+      <Desplazable etiqueta="Datos de la gráfica" className="mt-2">
         <table className="w-full min-w-[28rem] text-xs">
           <thead>
             <tr className="text-left text-muted-foreground">
@@ -204,7 +274,7 @@ export function TablaDatos({
             ))}
           </tbody>
         </table>
-      </div>
+      </Desplazable>
     </details>
   );
 }

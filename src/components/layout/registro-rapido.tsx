@@ -13,13 +13,13 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import {
-  type CuentaOpcion,
-  MovimientoForm,
-  type ObligacionParaPago,
-  type TipoMovimiento,
-} from "@/components/formularios/movimiento-form";
-import { AbonoForm, type PrestamoParaAbono } from "@/components/deudas/formularios";
-import { CompraForm, type TarjetaOpcion } from "@/components/tarjetas/formularios";
+  AbonoFormDiferido as AbonoForm,
+  CompraFormDiferido as CompraForm,
+  MovimientoFormDiferido as MovimientoForm,
+} from "@/components/formularios/diferidos";
+import type { CuentaOpcion, ObligacionParaPago, TipoMovimiento } from "@/components/formularios/movimiento-form";
+import type { PrestamoParaAbono } from "@/components/deudas/formularios";
+import type { TarjetaOpcion } from "@/components/tarjetas/formularios";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";

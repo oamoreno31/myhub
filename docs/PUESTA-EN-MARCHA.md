@@ -72,9 +72,19 @@ En **Inicio** debes ver "Estado de la instalación · ✓ Todo listo". Los enlac
 ## 4. Verificar calidad
 
 ```powershell
-pnpm check     # lint + tipos + 31 pruebas (dominio y migraciones SQL)
+pnpm check     # lint + tipos + pruebas (dominio y migraciones SQL, más de 200)
 pnpm build
 ```
+
+Pruebas de extremo a extremo (Playwright) sobre Supabase local con los datos de prueba:
+
+```powershell
+pnpm exec playwright install chromium   # una sola vez
+pnpm db:reset                           # datos limpios (las pruebas escriben datos)
+pnpm e2e                                # levanta la app si no está corriendo; o pnpm e2e:ui
+```
+
+Cubren inicio de sesión, pagar una obligación, compra con tarjeta → extracto → pago, cierre y reapertura de mes, exportación y respaldo, y una auditoría de accesibilidad (axe) en las pantallas principales. **Nunca** las apuntes a producción (`E2E_BASE_URL`).
 
 ## 5. Repositorio en GitHub
 
@@ -108,7 +118,7 @@ GitHub Actions correrá el CI (lint, formato, tipos, pruebas, build) en cada pus
    npx supabase link --project-ref <ref-del-proyecto>
    pnpm db:push
    ```
-   > `db:push` aplica solo las migraciones; `seed.sql` **no** se ejecuta en producción.
+   > `db:push` aplica solo las migraciones; `seed.sql` **no** se ejecuta en producción. La migración de F6 crea los buckets privados `comprobantes` y `respaldos` (Storage → Buckets) con sus políticas.
 5. **Crear tu usuario:** Authentication → Users → *Add user* → *Create new user* con tu correo y una contraseña fuerte, marcando *Auto Confirm User*. Al crearlo, la base de datos siembra automáticamente tus parámetros, la cuenta "Efectivo" y todas las categorías.
 6. (Opcional) Nombre para mostrar — SQL Editor:
    ```sql
@@ -131,13 +141,16 @@ GitHub Actions correrá el CI (lint, formato, tipos, pruebas, build) en cada pus
    | `ALLOWED_EMAILS` | `oamoreno31@gmail.com` |
    | `CRON_SECRET` | cadena aleatoria (ver abajo) |
    | `APP_TIMEZONE` | `America/Bogota` |
+   | `RESEND_API_KEY` | *(opcional)* llave de Resend para el correo de recordatorios |
+   | `EMAIL_FROM` | *(opcional)* remitente, p. ej. `Plata Clara <avisos@tu-dominio>` |
 
    Para generar `CRON_SECRET`:
    ```powershell
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
 3. **Deploy.** Si la URL final difiere de la que pusiste en Supabase (paso 6.3), actualízala allá.
-4. Settings → Cron Jobs: debe aparecer `/api/cron/diario` (07:00 Bogotá). Mantiene activo el proyecto gratuito de Supabase.
+4. Settings → Cron Jobs: debe aparecer `/api/cron/diario` (07:00 Bogotá). Mantiene activo el proyecto gratuito de Supabase, envía el correo de recordatorios y los domingos guarda el respaldo.
+5. **Correo (opcional):** crea una cuenta en <https://resend.com> → API Keys → *Create API key* (permiso *Sending access*) y ponla en `RESEND_API_KEY`. Sin dominio propio verificado, Resend solo entrega a tu propio correo usando `onboarding@resend.dev` (suficiente para ti). Con dominio (p. ej. `devtopia.co`), verifícalo en Resend → Domains y cambia `EMAIL_FROM`.
 
 ## 8. Checklist de aceptación de la Fase 0
 
@@ -214,6 +227,17 @@ Aplica la migración nueva (`pnpm db:push`, o en local `pnpm db:reset`).
 - [ ] **Plan de deudas**: completa las tasas que falten (están en el extracto) y ajusta el extra mensual: compara solo mínimos, avalancha y bola de nieve (meses, intereses, fecha libre).
 - [ ] **Seguridad social**: escribe el salario mínimo del año y guarda; con tu ingreso promedio ves IBC, salud, pensión, ARL y total, y lo comparas con lo registrado en la categoría PILA.
 - [ ] Al **cerrar un mes**, Histórico muestra su score en la tabla y la gráfica de Salud agrega el punto.
+
+## 14. Checklist de aceptación de la Fase 6 (complementos)
+
+Aplica la migración nueva (`pnpm db:push`, o en local `pnpm db:reset`) y, si quieres correo, configura Resend (sección 7, paso 5).
+
+- [ ] **Instalar en el celular:** abre la app en Chrome (Android) → menú → *Instalar app*; en iPhone, Safari → Compartir → *Agregar a inicio*. Abre desde el ícono: pantalla completa y accesos directos a Mes y Movimientos (mantén presionado el ícono).
+- [ ] **Sin conexión:** con el modo avión, abrir la app muestra "Estás sin conexión" (no guarda tus cifras en el teléfono); al volver la red, *Reintentar*.
+- [ ] **Comprobante:** registra un gasto con *Adjuntar comprobante* (foto o PDF). En Movimientos aparece el clip; al tocarlo se abre el archivo. Quítalo editando el gasto.
+- [ ] **Exportar:** Configuración → Datos y respaldo → elige el rango → *Descargar Excel* (3 hojas) y *Descargar CSV* (se abre bien en Excel en español).
+- [ ] **Respaldo:** *Descargar respaldo ahora* baja un JSON. Para probar la restauración, registra algo de prueba, elige el JSON en *Restaurar un respaldo*, revisa la vista previa y confirma: vuelve al estado del archivo.
+- [ ] **Cron:** Vercel → Settings → Cron Jobs → `/api/cron/diario` → *Run*. Con obligaciones vencidas o por vencer llega el correo; con `?respaldo=1` (probándolo con `curl` y `Authorization: Bearer <CRON_SECRET>`) aparece un respaldo en Datos y respaldo → *Respaldos automáticos*.
 
 ## Problemas comunes
 

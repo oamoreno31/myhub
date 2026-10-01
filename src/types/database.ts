@@ -911,7 +911,7 @@ isOneToOne: false
                   ]
                 },"v_compras_tc": {
                   Row: {
-                    "categoria_id": string | null,"categoria_nombre": string | null,"categoria_padre_id": string | null,"categoria_padre_nombre": string | null,"comercio": string | null,"created_at": string | null,"cuenta_destino_id": string | null,"cuenta_destino_nombre": string | null,"descripcion": string | null,"dia_corte": number | null,"estado_periodo": Database["public"]['Enums']["estado_periodo"] | null,"fecha": string | null,"id": string | null,"mes": string | null,"moneda": string | null,"monto": number | null,"monto_origen": number | null,"num_cuotas": number | null,"periodo_id": string | null,"primer_corte": string | null,"reembolsable": boolean | null,"reembolsado_por_id": string | null,"tarjeta_id": string | null,"tarjeta_nombre": string | null,"tipo": Database["public"]['Enums']["tipo_compra_tc"] | null,"trm": number | null,"user_id": string | null
+                    "adjunto_path": string | null,"categoria_id": string | null,"categoria_nombre": string | null,"categoria_padre_id": string | null,"categoria_padre_nombre": string | null,"comercio": string | null,"created_at": string | null,"cuenta_destino_id": string | null,"cuenta_destino_nombre": string | null,"descripcion": string | null,"dia_corte": number | null,"estado_periodo": Database["public"]['Enums']["estado_periodo"] | null,"fecha": string | null,"id": string | null,"mes": string | null,"moneda": string | null,"monto": number | null,"monto_origen": number | null,"num_cuotas": number | null,"periodo_id": string | null,"primer_corte": string | null,"reembolsable": boolean | null,"reembolsado_por_id": string | null,"tarjeta_id": string | null,"tarjeta_nombre": string | null,"tipo": Database["public"]['Enums']["tipo_compra_tc"] | null,"trm": number | null,"user_id": string | null
                   }
                   Relationships: [
                     {
@@ -1182,7 +1182,7 @@ isOneToOne: false
                   ]
                 },"v_movimientos": {
                   Row: {
-                    "categoria_color": string | null,"categoria_icono": string | null,"categoria_id": string | null,"categoria_nombre": string | null,"categoria_padre_id": string | null,"categoria_padre_nombre": string | null,"comercio": string | null,"created_at": string | null,"cuenta_destino_id": string | null,"cuenta_destino_nombre": string | null,"cuenta_id": string | null,"cuenta_nombre": string | null,"descripcion": string | null,"deuda_id": string | null,"es_recuperacion": boolean | null,"estado_periodo": Database["public"]['Enums']["estado_periodo"] | null,"etiquetas": (string)[] | null,"fecha": string | null,"id": string | null,"mes": string | null,"monto": number | null,"obligacion_nombre": string | null,"obligacion_periodo_id": string | null,"periodo_id": string | null,"prestamo_id": string | null,"prestamo_otorgado_id": string | null,"reembolsable": boolean | null,"reembolsado_por_id": string | null,"tipo": Database["public"]['Enums']["tipo_movimiento"] | null,"updated_at": string | null,"user_id": string | null
+                    "adjunto_path": string | null,"categoria_color": string | null,"categoria_icono": string | null,"categoria_id": string | null,"categoria_nombre": string | null,"categoria_padre_id": string | null,"categoria_padre_nombre": string | null,"comercio": string | null,"created_at": string | null,"cuenta_destino_id": string | null,"cuenta_destino_nombre": string | null,"cuenta_id": string | null,"cuenta_nombre": string | null,"descripcion": string | null,"deuda_id": string | null,"es_recuperacion": boolean | null,"estado_periodo": Database["public"]['Enums']["estado_periodo"] | null,"etiquetas": (string)[] | null,"fecha": string | null,"id": string | null,"mes": string | null,"monto": number | null,"obligacion_nombre": string | null,"obligacion_periodo_id": string | null,"periodo_id": string | null,"prestamo_id": string | null,"prestamo_otorgado_id": string | null,"reembolsable": boolean | null,"reembolsado_por_id": string | null,"tipo": Database["public"]['Enums']["tipo_movimiento"] | null,"updated_at": string | null,"user_id": string | null
                   }
                   Relationships: [
                     {
@@ -1503,7 +1503,18 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "cerrar_periodo":
+            "_columnas_diferidas":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "columna": string,"tabla": string
+            }[]
+                           },
+"_respaldo_de":
+{ Args: { "p_user": string }; Returns: Json
+                           },
+"_tablas_respaldo":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"cerrar_periodo":
 { Args: { "p_decisiones"?: Json,"p_periodo": string }; Returns: Json
                            },
 "corte_de_compra":
@@ -1525,6 +1536,12 @@ isOneToOne: false
                            },
 "exigir_reembolso":
 { Args: { "p_mov": string,"p_user": string }; Returns: undefined
+                           },
+"exportar_respaldo":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"exportar_respaldo_usuario":
+{ Args: { "p_user": string }; Returns: Json
                            },
 "fecha_en_mes":
 { Args: { "p_dia": number,"p_mes": string }; Returns: string
@@ -1562,8 +1579,16 @@ isOneToOne: false
 "recalcular_tarjeta":
 { Args: { "p_tarjeta": string }; Returns: undefined
                            },
+"recordatorios_hoy":
+{ Args: { "p_hoy": string }; Returns: {
+              "email": string,"obligaciones": Json,"user_id": string
+            }[]
+                           },
 "registrar_reembolso":
 { Args: { "p_compras"?: (string)[],"p_cuenta": string,"p_descripcion"?: string,"p_fecha": string,"p_monto": number,"p_movimientos"?: (string)[] }; Returns: string
+                           },
+"restaurar_respaldo":
+{ Args: { "p_datos": Json }; Returns: Json
                            },
 "solo_cambia_reembolso":
 { Args: { "p_new": Json,"p_old": Json }; Returns: boolean

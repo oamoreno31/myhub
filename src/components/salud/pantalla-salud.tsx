@@ -3,6 +3,7 @@
 import { ArrowRightIcon, SlidersHorizontalIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { MarcoGrafica } from "@/components/graficas/base";
 import { COLORES_SERIE } from "@/components/graficas/colores";
@@ -16,11 +17,19 @@ import { nombreCortoPeriodo, nombrePeriodo } from "@/lib/domain/periodos";
 import { type Accion, type Indicador, LECTURAS, type Score, type Umbrales } from "@/lib/domain/salud";
 import type { DeudaPlan, MetaVista } from "@/lib/salud";
 import { cn } from "@/lib/utils";
-import { FormUmbrales } from "./form-umbrales";
-import { type CuentaMeta, type DeudaMeta, PanelMetas } from "./metas";
+import type { CuentaMeta, DeudaMeta } from "./metas";
 import { BadgeBanda, formatoIndicador, MedidorScore, textoUmbral, TONOS_LECTURA } from "./piezas-salud";
-import { PanelDeudas } from "./plan-deudas";
-import { PanelSeguridadSocial } from "./seguridad-social";
+
+// Las pestañas distintas al resumen (y el formulario de umbrales) se descargan al abrirlas.
+function Cargando() {
+  return <div className="h-64 animate-pulse rounded-2xl bg-muted" aria-label="Cargando" role="status" />;
+}
+const PanelMetas = dynamic(() => import("./metas").then((m) => m.PanelMetas), { loading: Cargando });
+const PanelDeudas = dynamic(() => import("./plan-deudas").then((m) => m.PanelDeudas), { loading: Cargando });
+const PanelSeguridadSocial = dynamic(() => import("./seguridad-social").then((m) => m.PanelSeguridadSocial), {
+  loading: Cargando,
+});
+const FormUmbrales = dynamic(() => import("./form-umbrales").then((m) => m.FormUmbrales), { loading: Cargando });
 
 export type PestanaSalud = "resumen" | "metas" | "deudas" | "seguridad-social";
 

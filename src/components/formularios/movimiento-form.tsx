@@ -13,6 +13,7 @@ import { cuentaPorDefecto } from "@/lib/cuentas";
 import { formatearCOP } from "@/lib/domain/dinero";
 import { vistaPreviaPago } from "@/lib/domain/obligaciones";
 import { cn } from "@/lib/utils";
+import { CampoComprobante } from "./campo-comprobante";
 import { MontoInput } from "./monto-input";
 
 export type TipoMovimiento = "gasto" | "ingreso" | "transferencia";
@@ -43,6 +44,7 @@ export type MovimientoEditable = {
   descripcion: string | null;
   comercio: string | null;
   reembolsable: boolean;
+  adjunto_path?: string | null;
 };
 
 const TIPOS: { valor: TipoMovimiento; etiqueta: string; icono: typeof ArrowUpRightIcon }[] = [
@@ -302,6 +304,8 @@ export function MovimientoForm({
           </Casilla>
         </div>
       ) : null}
+
+      <CampoComprobante inicial={movimiento?.adjunto_path ?? null} />
 
       {vistaPrevia ? (
         <p className="rounded-xl bg-accent px-4 py-3 text-sm text-accent-foreground" aria-live="polite">

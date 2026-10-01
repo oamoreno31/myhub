@@ -1,5 +1,6 @@
 "use client";
 
+import { Desplazable } from "@/components/ui/desplazable";
 import { CopyIcon, LockIcon, SparklesIcon, StampIcon, Undo2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { guardarPresupuesto } from "@/actions/presupuesto";
@@ -348,7 +349,7 @@ export function PantallaPresupuesto({
               {formatearCOP(ingresoPromedio)}. Si una bolsa se pasa de su meta, se recorta en proporción; si no, se deja
               igual. Revisa y ajusta antes de guardar.
             </AlertDialogDescription>
-            <div className="overflow-x-auto">
+            <Desplazable etiqueta="Tabla de la propuesta por bolsa">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-muted-foreground">
@@ -385,7 +386,7 @@ export function PantallaPresupuesto({
                   })}
                 </tbody>
               </table>
-            </div>
+            </Desplazable>
             <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto text-sm">
               {propuesta.items.map((i) => (
                 <li key={i.categoria_id} className="flex justify-between gap-2">

@@ -44,3 +44,8 @@ next-env.d.ts
 supabase/.temp
 supabase/.branches
 !.env.example
+
+# pruebas e2e (Playwright)
+/tests/e2e/.auth/
+/tests/e2e/.resultados/
+/tests/e2e/.reporte/

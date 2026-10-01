@@ -37,7 +37,7 @@
 | Notificaciones UI | **sonner** | Toasts. |
 | Datos | **Supabase** (Postgres 15+, Auth, Storage) + `@supabase/ssr` + tipos generados (`supabase gen types`) | — |
 | Correo (opcional) | **Resend** | Recordatorios de vencimiento. |
-| Exportación | `xlsx` (SheetJS) / CSV nativo | Excel y CSV. |
+| Exportación | `exceljs` / CSV nativo (UTF-8 con BOM, `;`) | Excel y CSV que Excel en español abre bien. (F6: se usó `exceljs` en vez de SheetJS.) |
 | Pruebas | **Vitest** (dominio) · **Playwright** (e2e de flujos clave) | — |
 | Calidad | ESLint, Prettier, Husky + lint-staged, GitHub Actions (lint, typecheck, test) | — |
 | Gestor de paquetes | **pnpm** | — |
@@ -111,17 +111,18 @@ ingresosYgastos/
 1. **Registro deshabilitado** en Supabase Auth (solo se crea tu usuario desde el panel). Adicionalmente, lista blanca de correo en `src/proxy.ts` (Next 16 renombró middleware → proxy) y en la acción de login.
 2. **RLS en todas las tablas**: `using (user_id = auth.uid()) with check (user_id = auth.uid())`. `user_id` con `default auth.uid()`.
 3. **Service role key** solo en rutas de cron (servidor), protegidas con `Authorization: Bearer ${CRON_SECRET}`.
-4. **Storage** privado con políticas por carpeta `{user_id}/...`; URLs firmadas de corta duración.
+4. **Storage** privado con políticas por carpeta `{user_id}/...`; URLs firmadas de corta duración. *(F6: buckets `comprobantes` —fotos/PDF ≤ 5 MB, se comprimen las fotos en el navegador— y `respaldos` —solo lectura para el usuario, los escribe el cron—; `/api/comprobante` redirige a una URL firmada de 60 s.)*
 5. Opcional: **MFA TOTP** de Supabase Auth.
 6. No se guardan números completos de tarjeta ni cuentas: solo últimos 4.
-7. Encabezados de seguridad (CSP básica) en `next.config`.
+7. Encabezados de seguridad en `next.config` (nosniff, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, HSTS; CSP estricta solo para `sw.js`). `robots.txt` y `noindex`: la app no se indexa.
+8. **Restauración de respaldo:** `restaurar_respaldo(json)` fuerza el `user_id` de la sesión y rechaza el archivo si alguna referencia apunta a datos de otro usuario; queda en la bitácora.
 
 ## 6. Tareas programadas (Vercel Cron)
 
 | Ruta | Programación (UTC) | Hora Bogotá | Qué hace |
 |---|---|---|---|
 | `/api/cron/generar-mes` | `5 5 1 * *` | día 1, 00:05 | Crea el periodo y sus obligaciones. |
-| `/api/cron/diario` | `0 12 * * *` | 07:00 | Marca alertas (vence ≤ 3 días, vencidas, extracto no registrado tras el corte), envía correo resumen (opcional) y **mantiene activo** el proyecto Supabase (el plan gratuito pausa proyectos inactivos). |
+| `/api/cron/diario` | `0 12 * * *` | 07:00 | Asegura el mes en curso (y así **mantiene activo** el proyecto gratuito de Supabase), envía el correo de recordatorios con **Resend** (vencidas y lo que vence en ≤ 3 días; opcional) y los **domingos** guarda el respaldo JSON en Storage (retención 8 semanas). Cada paso es independiente; `?respaldo=1` fuerza el respaldo. |
 
 > En el plan Hobby de Vercel los cron se ejecutan como máximo una vez al día: suficiente para este diseño.
 
@@ -140,15 +141,17 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=   # llave publicable sb_publishable_… (r
 SUPABASE_SECRET_KEY=                    # sb_secret_…, solo servidor (cron)
 CRON_SECRET=
 ALLOWED_EMAILS=oamoreno31@gmail.com     # lista separada por comas
-RESEND_API_KEY=                   # opcional
+RESEND_API_KEY=                   # opcional (correo de recordatorios)
+EMAIL_FROM=Plata Clara <onboarding@resend.dev>
+APP_URL=                          # opcional; en Vercel se deduce
 APP_TIMEZONE=America/Bogota
 ```
 
 ## 8. Respaldo y recuperación
 
 - **Semanal (cron diario los domingos):** exporta todas las tablas del usuario a JSON en el bucket `respaldos/` (retención 8 semanas).
-- **Manual:** Configuración → Respaldo → Descargar JSON / Excel completo.
-- **Restauración:** importador del JSON de respaldo (fase 6).
+- **Manual:** Configuración → Datos y respaldo → Descargar respaldo (JSON) o Excel (movimientos, obligaciones y resumen mensual) / CSV por rango de meses.
+- **Restauración (F6):** Configuración → Datos y respaldo → Restaurar: vista previa de lo que trae el archivo y confirmación explícita; reemplaza **todos** los datos del usuario en una sola transacción. Los comprobantes adjuntos no viajan en el JSON (siguen en Storage).
 - Migraciones versionadas en Git: el esquema siempre es reproducible.
 
 ## 9. UX / UI
@@ -162,6 +165,9 @@ APP_TIMEZONE=America/Bogota
 - Estados vacíos con acción ("Aún no registras tu extracto de Visa → Registrar").
 
 ## 10. Rendimiento y límites
+
+- **PWA (F6):** instalable (manifest, íconos, accesos directos). El service worker solo guarda el "cascarón" estático (JS/CSS con hash, íconos, página sin conexión); **nunca** páginas con datos ni respuestas de `/api` o Supabase. Sin conexión muestra un aviso.
+- **Carga en móvil (F6):** los formularios pesados (registro rápido, pago, compra con tarjeta) y las pestañas secundarias de Salud se descargan al abrirlos (`next/dynamic`); el cliente de Supabase del navegador solo al subir un comprobante; fuentes con `next/font/local` (precarga y respaldo con métricas). Lighthouse móvil (mediana de 3 corridas, entorno local): rendimiento 90–99 en todas las pantallas, accesibilidad y buenas prácticas 100.
 
 - Volumen esperado: < 3.000 movimientos/año → sin necesidad de particionar.
 - Índices: `(user_id, fecha)`, `(user_id, periodo_id)`, `(tarjeta_id, fecha)`, `(obligacion_periodo_id)`.

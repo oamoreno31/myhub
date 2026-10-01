@@ -1,6 +1,6 @@
 "use client";
 
-import { type PointerEvent, useState } from "react";
+import { useState } from "react";
 import {
   formatearValor,
   Leyenda,
@@ -11,6 +11,7 @@ import {
   type Unidad,
   useAncho,
   valorCompacto,
+  ZonaInteractiva,
 } from "./base";
 
 /**
@@ -65,13 +66,6 @@ export function Lineas({
   const x = (i: number) => izq + (n <= 1 ? w / 2 : (w * i) / (n - 1));
   const y = (v: number) => arriba + h - ((v - minEje) / (maxEje - minEje || 1)) * h;
   const cadaCuanto = n > 1 && w / (n - 1) < 34 ? Math.ceil(34 / (w / (n - 1))) : 1;
-
-  const mover = (e: PointerEvent<SVGRectElement>) => {
-    const caja = e.currentTarget.getBoundingClientRect();
-    const px = e.clientX - caja.left;
-    const i = n <= 1 ? 0 : Math.round((px / caja.width) * (n - 1));
-    setActivo(Math.min(Math.max(i, 0), n - 1));
-  };
 
   // Etiquetas al final: se ordenan por altura y se descarta la que queda a < 14 px de otra.
   const finales = series
@@ -182,28 +176,26 @@ export function Lineas({
                 ))}
               </g>
             ) : null}
-            <rect
-              x={izq}
-              y={arriba}
-              width={w}
-              height={h}
-              fill="transparent"
-              tabIndex={0}
-              aria-label={`${etiquetaAria}. Usa las flechas para recorrer los meses.`}
-              onPointerMove={mover}
-              onPointerDown={mover}
-              onFocus={() => setActivo((a) => a ?? n - 1)}
-              onBlur={() => setActivo(null)}
-              onKeyDown={(e) => {
-                if (e.key === "ArrowLeft") setActivo((a) => Math.max((a ?? n - 1) - 1, 0));
-                if (e.key === "ArrowRight") setActivo((a) => Math.min((a ?? 0) + 1, n - 1));
-              }}
-              className="cursor-crosshair outline-none focus-visible:stroke-ring focus-visible:stroke-2"
-            />
           </svg>
         ) : (
           <div style={{ height: alto }} />
         )}
+        {ancho > 0 ? (
+          <ZonaInteractiva
+            izq={izq}
+            arriba={arriba}
+            ancho={w}
+            alto={h}
+            n={n}
+            activo={activo}
+            setActivo={setActivo}
+            indiceEn={(px, anchoZona) => (n <= 1 ? 0 : Math.round((px / anchoZona) * (n - 1)))}
+            etiqueta={etiquetaAria}
+            textoValor={(i) =>
+              `${titulos?.[i] ?? etiquetas[i]}: ${series.map((s) => `${s.nombre} ${formatearValor(s.valores[i] ?? 0, unidad)}`).join(", ")}`
+            }
+          />
+        ) : null}
         {activo !== null && ancho > 0 ? (
           <Tooltip
             x={x(activo)}

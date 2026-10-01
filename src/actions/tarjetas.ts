@@ -5,6 +5,7 @@ import { type EstadoAccion, exito, falla } from "@/lib/acciones";
 import { formatearCOP } from "@/lib/domain/dinero";
 import { ETIQUETA_TIPO_COMPRA } from "@/lib/domain/tarjetas";
 import { createClient } from "@/lib/supabase/server";
+import { borrarComprobante, leerComprobante } from "@/lib/comprobantes";
 import { compraTCSchema, erroresPorCampo, extractoSchema, pagoTCSchema, tarjetaSchema, uuid } from "@/lib/validaciones";
 import type { NuevaFila } from "@/types/db";
 
@@ -114,15 +115,28 @@ export async function guardarCompra(_prev: EstadoAccion, formData: FormData): Pr
   };
 
   const supabase = await createClient();
+  const adjunto = await leerComprobante(supabase, formData);
+  if (adjunto.error) return falla(adjunto.error);
+  const conAdjunto = adjunto.valor === undefined ? {} : { adjunto_path: adjunto.valor };
   // periodo_id lo asigna el trigger según la fecha.
   const { data, error } = id
-    ? await supabase.from("compras_tc").update(fila).eq("id", id).select("id").single()
+    ? await supabase
+        .from("compras_tc")
+        .update({ ...fila, ...conAdjunto })
+        .eq("id", id)
+        .select("id")
+        .single()
     : await supabase
         .from("compras_tc")
-        .insert(fila satisfies Omit<NuevaFila<"compras_tc">, "periodo_id"> as NuevaFila<"compras_tc">)
+        .insert({
+          ...(fila satisfies Omit<NuevaFila<"compras_tc">, "periodo_id"> as NuevaFila<"compras_tc">),
+          ...conAdjunto,
+        })
         .select("id")
         .single();
   if (error) return falla(error);
+  if (adjunto.anterior && adjunto.anterior !== adjunto.valor && adjunto.valor !== undefined)
+    await borrarComprobante(supabase, adjunto.anterior);
   revalidar();
   const cuotas = fila.num_cuotas > 1 ? ` a ${fila.num_cuotas} cuotas` : "";
   return exito(
@@ -134,9 +148,11 @@ export async function guardarCompra(_prev: EstadoAccion, formData: FormData): Pr
 export async function eliminarCompra(id: string): Promise<EstadoAccion> {
   if (!uuid.safeParse(id).success) return falla("Compra inválida");
   const supabase = await createClient();
+  const { data: previo } = await supabase.from("compras_tc").select("adjunto_path").eq("id", id).maybeSingle();
   const { error, count } = await supabase.from("compras_tc").delete({ count: "exact" }).eq("id", id);
   if (error) return falla(error);
   if (!count) return falla("No se encontró la compra.");
+  await borrarComprobante(supabase, previo?.adjunto_path);
   revalidar();
   return exito("Compra eliminada. La deuda se recalculó.");
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Desplazable } from "@/components/ui/desplazable";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { COLOR_OTRAS, COLORES_SERIE, MarcoGrafica } from "@/components/graficas/base";
@@ -258,7 +259,7 @@ export function PantallaAnalisis({
               {comparacion.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Sin datos para comparar.</p>
               ) : (
-                <div className="overflow-x-auto">
+                <Desplazable etiqueta="Tabla: este mes frente a tu promedio">
                   <table className="w-full min-w-[22rem] text-sm">
                     <thead>
                       <tr className="text-left text-xs text-muted-foreground">
@@ -287,7 +288,7 @@ export function PantallaAnalisis({
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </Desplazable>
               )}
             </MarcoGrafica>
 

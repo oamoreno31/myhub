@@ -259,7 +259,7 @@ export default async function InicioPage() {
           </span>
           <div className="flex flex-1 flex-col">
             <span className="font-bold text-accent-foreground">Configura tu mes en 2 minutos</span>
-            <span className="text-sm text-accent-foreground/80">
+            <span className="text-sm text-accent-foreground">
               Marca tus cuentas, tus pagos fijos (arriendo, servicios, internet…) y tu ingreso mensual.
             </span>
           </div>

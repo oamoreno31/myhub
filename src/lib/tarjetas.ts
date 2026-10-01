@@ -77,6 +77,7 @@ export type CompraUI = Omit<CompraTC, "monto"> & {
   reembolsado: boolean;
   primer_corte: string;
   estado_periodo: string;
+  adjunto_path: string | null;
 };
 
 export type ExtractoUI = ExtractoTC & {
@@ -166,6 +167,7 @@ export const obtenerDetalleTarjeta = cache(async (id: string) => {
     reembolsado: Boolean(c.reembolsado_por_id),
     primer_corte: c.primer_corte!,
     estado_periodo: c.estado_periodo ?? "abierto",
+    adjunto_path: c.adjunto_path,
   }));
 
   const listaExtractos: ExtractoUI[] = (extractos.data ?? []).map((e) => ({

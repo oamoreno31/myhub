@@ -108,6 +108,7 @@ export default async function MovimientosPage({ searchParams }: PageProps<"/movi
     deuda_id: m.deuda_id,
     prestamo_id: m.prestamo_id,
     reembolsado: Boolean(m.reembolsado_por_id),
+    adjunto_path: m.adjunto_path,
     created_at: m.created_at ?? "",
   }));
 
@@ -136,6 +137,7 @@ export default async function MovimientosPage({ searchParams }: PageProps<"/movi
       tarjeta_id: c.tarjeta_id,
       reembolsado: Boolean(c.reembolsado_por_id),
       num_cuotas: c.num_cuotas ?? 1,
+      adjunto_path: c.adjunto_path,
       created_at: c.created_at ?? "",
     });
   }
@@ -197,6 +199,7 @@ export default async function MovimientosPage({ searchParams }: PageProps<"/movi
           categorias={catalogos.categorias}
           hoy={hoyISO(new Date(), serverEnv().APP_TIMEZONE)}
           truncado={(data ?? []).length === LIMITE}
+          cuentaFiltro={cuenta}
         />
       )}
     </div>

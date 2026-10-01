@@ -3,6 +3,7 @@
 import { AlertTriangleIcon, CheckIcon } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { guardarCompra, guardarExtracto, guardarPago, guardarTarjeta } from "@/actions/tarjetas";
+import { CampoComprobante } from "@/components/formularios/campo-comprobante";
 import { MontoInput } from "@/components/formularios/monto-input";
 import { BotonGuardar, Linea, Segmentos, VistaPrevia } from "@/components/formularios/vista-previa";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,7 @@ export type CompraEditable = {
   monto_origen: number | null;
   trm: number | null;
   reembolsable: boolean;
+  adjunto_path?: string | null;
 };
 
 export type ExtractoEditable = ExtractoTC & { id: string };
@@ -517,6 +519,8 @@ export function CompraForm({
           </div>
         </div>
       ) : null}
+
+      <CampoComprobante inicial={compra?.adjunto_path ?? null} />
 
       {vista ? <VistaPrevia>{vista}</VistaPrevia> : null}
 

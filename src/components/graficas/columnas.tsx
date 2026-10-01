@@ -2,7 +2,17 @@
 
 import { useState } from "react";
 import { formatearCOP } from "@/lib/domain/dinero";
-import { barraRedondeada, Leyenda, marcasEje, pesosCompactos, type Serie, TablaDatos, Tooltip, useAncho } from "./base";
+import {
+  barraRedondeada,
+  Leyenda,
+  marcasEje,
+  pesosCompactos,
+  type Serie,
+  TablaDatos,
+  Tooltip,
+  useAncho,
+  ZonaInteractiva,
+} from "./base";
 
 /**
  * Columnas (apiladas si hay varias series). Una sola serie = sin leyenda (el título la nombra).
@@ -105,22 +115,6 @@ export function Columnas({
                       {e}
                     </text>
                   ) : null}
-                  {/* Zona de hover/foco más grande que la marca */}
-                  <rect
-                    x={izq + banda * i}
-                    y={arriba}
-                    width={banda}
-                    height={h}
-                    fill="transparent"
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`${titulos?.[i] ?? e}: ${formatearCOP(totales[i])}`}
-                    onPointerEnter={() => setActiva(i)}
-                    onPointerMove={() => setActiva(i)}
-                    onFocus={() => setActiva(i)}
-                    onBlur={() => setActiva(null)}
-                    className="cursor-default outline-none focus-visible:stroke-ring focus-visible:stroke-2"
-                  />
                 </g>
               );
             })}
@@ -128,6 +122,29 @@ export function Columnas({
         ) : (
           <div style={{ height: alto }} />
         )}
+        {ancho > 0 ? (
+          <ZonaInteractiva
+            izq={izq}
+            arriba={arriba}
+            ancho={w}
+            alto={h}
+            n={etiquetas.length}
+            activo={activa}
+            setActivo={setActiva}
+            indiceEn={(px) => Math.floor(px / banda)}
+            etiqueta={etiquetaAria}
+            textoValor={(i) =>
+              `${titulos?.[i] ?? etiquetas[i]}: ${formatearCOP(totales[i])}${
+                series.length > 1
+                  ? ` (${series
+                      .filter((s) => (s.valores[i] ?? 0) !== 0)
+                      .map((s) => `${s.nombre} ${formatearCOP(s.valores[i] ?? 0)}`)
+                      .join(", ")})`
+                  : ""
+              }`
+            }
+          />
+        ) : null}
         {activa !== null && ancho > 0 ? (
           <Tooltip
             x={izq + banda * activa + banda / 2}

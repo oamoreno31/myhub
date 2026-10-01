@@ -1,5 +1,6 @@
 "use client";
 
+import { Desplazable } from "@/components/ui/desplazable";
 import { LandmarkIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -249,7 +250,7 @@ export function PanelDeudas({
 
           <Card className="gap-2">
             <h2 className="font-bold">Orden y mes en que sales de cada una</h2>
-            <div className="relative overflow-x-auto">
+            <Desplazable etiqueta="Mes en que sales de cada deuda por método">
               <table className="w-full min-w-[28rem] text-sm">
                 <thead>
                   <tr className="text-left text-xs text-muted-foreground">
@@ -288,7 +289,7 @@ export function PanelDeudas({
                   ))}
                 </tbody>
               </table>
-            </div>
+            </Desplazable>
           </Card>
         </>
       )}

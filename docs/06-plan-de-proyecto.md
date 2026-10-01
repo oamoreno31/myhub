@@ -103,13 +103,15 @@ Supuesto de dedicación: ~12 h/semana (en paralelo con Devtopia). Ajustable.
 - [x] E2E en navegador (score, acciones, umbrales, metas con fecha atrasada, simulador, PILA) + regresión F1–F4; móvil 375 px sin desbordes; tema oscuro
 - Cambios frente al diseño: en lugar de la vista `v_indicadores_mes`, la BD calcula los **insumos** (`insumos_salud`) y TypeScript aplica umbrales y pesos: así cambiar un umbral recalcula también los meses cerrados sin tocar su foto. La tasa de ahorro usa el **consumo personal** (sin gastos reembolsables por Devtopia ni lo registrado en la bolsa de ahorro). "Gastos fijos" se muestra pero no pesa en el score (el doc 02 §4.1 no le asigna peso). El fondo de emergencia usa la plata en cuentas líquidas (sin aportes de cooperativa) sobre el gasto esencial promedio de los 3 meses anteriores. La forma de pago de tarjetas se mide por extracto vencido (total 100 · otro valor 50 · mínimo 0). El avance de una meta es el saldo de su cuenta (o lo pagado de la deuda); los aportes se registran como transferencias. El simulador supone mínimos fijos. La calculadora PILA no trae el salario mínimo precargado: se escribe cada año.
 
-### F6 — Complementos
-- [ ] PWA (manifest, íconos, service worker de caché de shell)
-- [ ] Cron diario (alertas, correo, keep-alive, respaldo dominical)
-- [ ] Storage de comprobantes con URLs firmadas
-- [ ] Exportación CSV/Excel, respaldo/restauración JSON
-- [ ] e2e: login, pagar obligación, compra TC → extracto → pago, cierre de mes
-- [ ] Revisión de accesibilidad y rendimiento (Lighthouse ≥ 90 móvil)
+### F6 — Complementos ✅ (30-sep-2026)
+- [x] Migración `20261002000100_complementos.sql`: buckets privados `comprobantes` y `respaldos` con políticas por carpeta, `exportar_respaldo` / `restaurar_respaldo` (JSON versión 1), `recordatorios_hoy` para el correo; `v_movimientos` y `v_compras_tc` exponen el comprobante
+- [x] PWA: manifest (nombre, colores, accesos directos a Mes y Movimientos), íconos 192/512/maskable y de Apple, service worker que solo guarda el cascarón estático (nunca datos) y página "Estás sin conexión"
+- [x] Cron diario: asegura el mes (keep-alive de Supabase), correo de recordatorios con Resend (vencidas y ≤ 3 días; `lib/domain/recordatorios.ts` + pruebas) y respaldo dominical en Storage con retención de 8 semanas; cada paso independiente
+- [x] Comprobantes: adjuntar foto o PDF al registrar o editar un gasto o una compra con tarjeta (compresión de fotos en el navegador, ≤ 5 MB), verlos desde Movimientos con URL firmada de 60 s
+- [x] Exportación a Excel (movimientos de cuentas y tarjetas, obligaciones y resumen mensual) y CSV (UTF-8 con BOM y `;`) por rango de meses; respaldo JSON descargable, lista de respaldos automáticos y restauración con vista previa y confirmación (Configuración → Datos y respaldo)
+- [x] E2E en el repositorio con Playwright (`pnpm e2e`): inicio de sesión, pagar una obligación, compra con tarjeta → extracto → pago total, cerrar y reabrir el mes, exportar y respaldar; más auditoría de accesibilidad con axe (WCAG 2.1 A/AA, sin violaciones graves) en 11 pantallas, escritorio y móvil, tema claro y oscuro
+- [x] Rendimiento y accesibilidad: formularios pesados y pestañas secundarias cargados al abrirse, fuentes con `next/font`, tablas desplazables enfocables, gráficas con un control accesible (slider) en vez de elementos interactivos dentro del SVG, `robots.txt`. Lighthouse móvil (mediana de 3): rendimiento ≥ 90 en todas las pantallas, accesibilidad 100, buenas prácticas 100
+- Cambios frente al diseño: exportación con `exceljs` (no SheetJS). El respaldo semanal se dispara desde el cron diario los domingos (Vercel Hobby permite un cron diario). Los comprobantes no viajan en el respaldo JSON. La restauración está limitada a ~4 MB por el tamaño máximo de cuerpo de Vercel (respaldos mayores, desde la base de datos). El SEO de Lighthouse es bajo a propósito: la app es privada y no se indexa.
 
 ## 4. Definición de terminado (por historia)
 

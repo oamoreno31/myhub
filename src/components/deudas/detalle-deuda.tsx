@@ -1,5 +1,6 @@
 "use client";
 
+import { Desplazable } from "@/components/ui/desplazable";
 import {
   ArchiveIcon,
   ArchiveRestoreIcon,
@@ -326,7 +327,7 @@ export function DetalleDeudaPantalla({
                 Si pagas la cuota de {formatearCOP(d.cuota)} cada mes (sin seguros ni aportes). Los valores reales
                 cambian un poco según los días de cada mes. Un <strong>abono extra</strong> a capital acorta el plazo.
               </p>
-              <div className="overflow-x-auto">
+              <Desplazable etiqueta="Tabla de amortización">
                 <table className="w-full min-w-[30rem] text-sm">
                   <thead>
                     <tr className="text-left text-xs text-muted-foreground">
@@ -349,7 +350,7 @@ export function DetalleDeudaPantalla({
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </Desplazable>
               {proy.filas.length > 12 ? (
                 <Button variant="link" className="self-start px-0" onClick={() => setVerTodo((v) => !v)}>
                   {verTodo ? "Ver solo 12 meses" : `Ver las ${proy.filas.length} cuotas`}

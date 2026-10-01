@@ -4,7 +4,7 @@ App web personal para registrar ingresos y gastos **mes a mes**: checklist de lo
 
 **Stack:** Next.js 16 (App Router, Turbopack) + TypeScript + Tailwind 4 · Supabase (Postgres, Auth, Storage) · Vercel.
 
-**Estado:** ✅ F0 (fundaciones) · ✅ F1 (núcleo mensual) · ✅ F2 (tarjetas de crédito → **MVP usable**) · ✅ F3 (deudas, préstamos y reembolsos Devtopia) · ✅ F4 (análisis, presupuesto e histórico) · ✅ F5 (salud financiera: score, metas, plan de deudas, PILA) · siguiente: F6 (complementos).
+**Estado:** ✅ F0 (fundaciones) · ✅ F1 (núcleo mensual) · ✅ F2 (tarjetas de crédito → **MVP usable**) · ✅ F3 (deudas, préstamos y reembolsos Devtopia) · ✅ F4 (análisis, presupuesto e histórico) · ✅ F5 (salud financiera: score, metas, plan de deudas, PILA) · ✅ F6 (PWA, correo de recordatorios, comprobantes, exportación, respaldo/restauración, e2e) → **versión 1.0**.
 Para arrancar: [docs/PUESTA-EN-MARCHA.md](docs/PUESTA-EN-MARCHA.md).
 
 ## Comandos
@@ -14,6 +14,7 @@ Para arrancar: [docs/PUESTA-EN-MARCHA.md](docs/PUESTA-EN-MARCHA.md).
 | `pnpm dev`                  | App local en <http://localhost:3000>                       |
 | `pnpm check`                | Lint + tipos + pruebas                                     |
 | `pnpm test`                 | Pruebas (dominio + migraciones SQL con PGlite, sin Docker) |
+| `pnpm e2e` / `e2e:ui`       | Pruebas de extremo a extremo (Playwright) + accesibilidad  |
 | `pnpm build`                | Build de producción                                        |
 | `pnpm format`               | Formatea con Prettier                                      |
 | `pnpm db:start` / `db:stop` | Supabase local (Docker)                                    |
@@ -29,7 +30,9 @@ src/
 │  ├─ (auth)/login/          # entrada: contraseña o enlace mágico
 │  ├─ (app)/                 # app protegida: layout con barra lateral / inferior
 │  ├─ auth/confirm/          # destino del enlace mágico
-│  └─ api/cron/              # generar-mes (día 1) y diario (Vercel Cron)
+│  ├─ api/cron/              # generar-mes (día 1) y diario (Vercel Cron: correo + respaldo dominical)
+│  ├─ api/export/ api/respaldo/ api/comprobante/   # Excel/CSV, respaldo JSON, comprobantes firmados
+│  ├─ manifest.ts robots.ts offline/               # PWA e indexación
 ├─ actions/                  # server actions: auth, periodo, mes, movimientos, configuracion, bienvenida, tarjetas, deudas, presupuesto, salud
 ├─ components/
 │  ├─ ui/                    # primitivas estilo shadcn (button, sheet, select, campo…)
@@ -40,6 +43,7 @@ src/
 │  ├─ graficas/              # columnas apiladas y líneas en SVG (tooltip, teclado, tabla de datos)
 │  ├─ analisis/ presupuesto/ historico/
 │  ├─ salud/                 # score, acciones, metas, plan de deudas y seguridad social
+│  ├─ pwa/                   # registro del service worker (public/sw.js)
 ├─ hooks/use-accion.ts       # useActionState + toasts + cierre de hojas
 ├─ lib/
 │  ├─ domain/                # lógica pura + pruebas (dinero, periodos, obligaciones, tarjetas, deudas, analisis, salud, simulador, metas, pila)
@@ -57,6 +61,7 @@ supabase/
 ├─ migrations/               # esquema versionado
 └─ seed.sql                  # solo desarrollo local
 tests/db/                    # pruebas de migraciones, RLS, triggers, cierre de mes y contrato TS↔SQL
+tests/e2e/                   # Playwright: flujos clave y accesibilidad (axe)
 docs/                        # análisis y plan (01–06) + puesta en marcha
 ```
 

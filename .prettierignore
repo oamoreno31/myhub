@@ -4,3 +4,6 @@ pnpm-lock.yaml
 supabase/.temp
 src/types/database.ts
 docs
+tests/e2e/.reporte
+tests/e2e/.resultados
+tests/e2e/.auth

@@ -9,6 +9,7 @@ import {
   HandCoinsIcon,
   LandmarkIcon,
   LockIcon,
+  PaperclipIcon,
   PiggyBankIcon,
   Trash2Icon,
   WalletIcon,
@@ -18,7 +19,8 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { eliminarMovimiento } from "@/actions/movimientos";
 import { HojaFormulario } from "@/components/formularios/hoja-formulario";
-import { type CuentaOpcion, MovimientoForm } from "@/components/formularios/movimiento-form";
+import { MovimientoFormDiferido as MovimientoForm } from "@/components/formularios/diferidos";
+import type { CuentaOpcion } from "@/components/formularios/movimiento-form";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,6 +74,7 @@ export type MovimientoUI = {
   prestamo_id?: string | null;
   reembolsado?: boolean;
   num_cuotas?: number;
+  adjunto_path?: string | null;
   created_at: string;
 };
 
@@ -82,8 +85,30 @@ const ENTRADAS = new Set<MovimientoUI["tipo"]>([
   "desembolso_deuda",
   "reembolso_devtopia",
 ]);
-/** Consumo del mes (se muestra con "−"). */
+/** Consumo del mes (fondo neutro en el ícono). */
 const CONSUMO = new Set<MovimientoUI["tipo"]>(["gasto", "compra_tc"]);
+/** Sale plata de la cuenta de origen (o es consumo con tarjeta). */
+const SALIDAS = new Set<MovimientoUI["tipo"]>([
+  "gasto",
+  "compra_tc",
+  "pago_tc",
+  "pago_deuda",
+  "aporte",
+  "prestamo_otorgado",
+]);
+
+/**
+ * Sentido del movimiento: +1 entra plata, −1 sale, 0 neutro (transferencia sin filtro de cuenta).
+ * Con una cuenta filtrada, lo que llega a esa cuenta (transferencia, aporte, pago recibido) entra.
+ */
+function sentido(m: MovimientoUI, cuentaFiltro?: string | null): 1 | -1 | 0 {
+  if (m.monto < 0) return 1; // devolución de una compra con tarjeta
+  if (ENTRADAS.has(m.tipo)) return 1;
+  if (cuentaFiltro && m.cuenta_destino_id === cuentaFiltro && m.cuenta_id !== cuentaFiltro) return 1;
+  if (SALIDAS.has(m.tipo)) return -1;
+  if (cuentaFiltro && m.cuenta_id === cuentaFiltro) return -1;
+  return 0;
+}
 
 /** Dónde se edita un movimiento creado por un módulo. */
 function destino(m: MovimientoUI): string | null {
@@ -144,12 +169,15 @@ export function ListaMovimientos({
   categorias,
   hoy,
   truncado,
+  cuentaFiltro,
 }: {
   movimientos: MovimientoUI[];
   cuentas: CuentaOpcion[];
   categorias: CategoriaBasica[];
   hoy: string;
   truncado: boolean;
+  /** Cuenta filtrada (?cuenta=): define si una transferencia entra o sale. */
+  cuentaFiltro?: string | null;
 }) {
   const [editando, setEditando] = useState<MovimientoEditableUI | null>(null);
   const router = useRouter();
@@ -190,16 +218,8 @@ export function ListaMovimientos({
     <>
       <div className="flex flex-col gap-4">
         {[...porDia.entries()].map(([fecha, lista]) => {
-          const totalDia = lista.reduce(
-            (a, m) =>
-              a +
-              (m.tipo === "ingreso" || m.tipo === "recuperacion_prestamo" || m.tipo === "reembolso_devtopia"
-                ? m.monto
-                : CONSUMO.has(m.tipo)
-                  ? -m.monto
-                  : 0),
-            0,
-          );
+          // Neto del día con el mismo signo que se muestra en cada movimiento.
+          const totalDia = lista.reduce((a, m) => a + sentido(m, cuentaFiltro) * Math.abs(m.monto), 0);
           return (
             <Card key={fecha} className="gap-0 py-3">
               <div className="flex items-center justify-between pb-2">
@@ -263,8 +283,13 @@ export function ListaMovimientos({
                           <span className="truncate text-xs text-muted-foreground">{sub}</span>
                         </span>
                         <span className="flex flex-col items-end gap-1">
-                          <span className={cn("font-bold whitespace-nowrap", ENTRADAS.has(m.tipo) && "text-success")}>
-                            {ENTRADAS.has(m.tipo) || m.monto < 0 ? "+ " : CONSUMO.has(m.tipo) ? "− " : ""}
+                          <span
+                            className={cn(
+                              "font-bold whitespace-nowrap",
+                              sentido(m, cuentaFiltro) === 1 && "text-success",
+                            )}
+                          >
+                            {sentido(m, cuentaFiltro) === 1 ? "+ " : sentido(m, cuentaFiltro) === -1 ? "− " : ""}
                             {formatearCOP(Math.abs(m.monto))}
                           </span>
                           <span className="flex gap-1">
@@ -285,12 +310,28 @@ export function ListaMovimientos({
                                 <Badge variant="warning">Reembolsable</Badge>
                               )
                             ) : null}
+                            {m.adjunto_path ? (
+                              <span title="Con comprobante" className="text-muted-foreground">
+                                <PaperclipIcon className="size-3.5" aria-hidden="true" />
+                                <span className="sr-only">Con comprobante</span>
+                              </span>
+                            ) : null}
                             {m.cerrado ? (
                               <LockIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
                             ) : null}
                           </span>
                         </span>
                       </button>
+                      {m.cerrado && m.adjunto_path ? (
+                        <a
+                          href={`/api/comprobante?ruta=${encodeURIComponent(m.adjunto_path)}`}
+                          target="_blank"
+                          rel="noopener"
+                          className="-mt-2 mb-2 ml-12 inline-flex items-center gap-1 text-xs font-semibold text-primary underline-offset-4 hover:underline"
+                        >
+                          <PaperclipIcon className="size-3" aria-hidden="true" /> Ver comprobante
+                        </a>
+                      ) : null}
                     </li>
                   );
                 })}

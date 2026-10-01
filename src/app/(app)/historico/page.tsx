@@ -1,3 +1,4 @@
+import { Desplazable } from "@/components/ui/desplazable";
 import { CircleDotIcon, LockIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -180,7 +181,7 @@ export default async function HistoricoPage({ searchParams }: PageProps<"/histor
         {!este ? (
           <p className="text-sm text-muted-foreground">Este mes no tiene datos.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <Desplazable etiqueta="Tabla comparativa del mes">
             <table className="w-full min-w-[34rem] text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground">
@@ -209,7 +210,7 @@ export default async function HistoricoPage({ searchParams }: PageProps<"/histor
                 ))}
               </tbody>
             </table>
-          </div>
+          </Desplazable>
         )}
       </MarcoGrafica>
 
@@ -217,7 +218,7 @@ export default async function HistoricoPage({ searchParams }: PageProps<"/histor
         {meses.length === 0 ? (
           <p className="text-sm text-muted-foreground">Aún no hay meses registrados.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <Desplazable etiqueta="Tabla mes a mes">
             <table className="w-full min-w-[50rem] text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground">
@@ -289,7 +290,7 @@ export default async function HistoricoPage({ searchParams }: PageProps<"/histor
                 })}
               </tbody>
             </table>
-          </div>
+          </Desplazable>
         )}
       </MarcoGrafica>
 
@@ -322,7 +323,7 @@ export default async function HistoricoPage({ searchParams }: PageProps<"/histor
                 etiquetaAria={`${elegida.nombre}: pagado cada mes`}
                 conTabla={false}
               />
-              <div className="overflow-x-auto">
+              <Desplazable etiqueta="Pagos de la obligación por mes">
                 <table className="w-full min-w-[30rem] text-sm">
                   <thead>
                     <tr className="text-left text-xs text-muted-foreground">
@@ -357,7 +358,7 @@ export default async function HistoricoPage({ searchParams }: PageProps<"/histor
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </Desplazable>
             </>
           ) : null}
         </MarcoGrafica>
