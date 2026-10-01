@@ -1,5 +1,7 @@
 # Plata Clara — Ingresos y gastos personales
 
+Updated
+
 App web personal para registrar ingresos y gastos **mes a mes**: checklist de lo que falta por pagar, histórico de pagos, manejo especial de **tarjetas de crédito** (capital vs otros cargos), deudas, análisis de gasto y salud financiera.
 
 **Stack:** Next.js 16 (App Router, Turbopack) + TypeScript + Tailwind 4 · Supabase (Postgres, Auth, Storage) · Vercel.
