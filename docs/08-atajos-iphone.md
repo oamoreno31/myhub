@@ -1,7 +1,7 @@
 # 08 · Captura desde iPhone: Atajos con Wallet, SMS del banco y registro rápido
 
 > Evaluación y plan para registrar gastos sin abrir la app: un **Atajo de iPhone** pregunta *origen, monto y descripción* (fecha = hoy) y lo envía a Plata Clara. Tres disparadores: **pago con Wallet (Apple Pay)**, **SMS del banco** y **registro rápido manual** (Siri, pantalla de inicio, botón de acción).
-> Estado: **F8.1, F8.2 y F8.3 implementadas** (24-nov-2026: base de datos, intérprete, API y pantallas). Pendientes F8.0 (SMS reales) y F8.4 (atajos en el iPhone). Lo implementado y sus diferencias con este diseño están en el §12 y §13.
+> Estado: **F8.1–F8.4 implementadas** (24-nov-2026: base de datos, intérprete, API, pantallas y guía de atajos). Pendientes: F8.0 (SMS reales de tus bancos) y armar los atajos en el iPhone con la guía (§14, `PUESTA-EN-MARCHA.md` §15). Lo implementado y sus diferencias con este diseño están en los §12–§14.
 
 ---
 
@@ -430,3 +430,30 @@ curl -s -X POST "$APP_URL/api/atajos/v1/registrar" -H "Authorization: Bearer $TO
 **Base de datos** (`20261124000200_bandeja_revision.sql`): vista `v_por_revisar` (une movimientos y compras) y trigger "*Por clasificar* ⇒ por revisar"; editar un registro desde la app (`guardarMovimiento`, `guardarCompra`) apaga la marca, salvo que siga en *Por clasificar*. Acciones en `src/actions/atajos.ts` (`crearTokenApi`, `revocarTokenApi`, `cambiarAlias`, `eliminarAlias`, `confirmarRevision`).
 
 **Verificación:** `pnpm check` (lint, tipos, 292 pruebas) y `next build` en verde; render de los dos componentes con datos de ejemplo. No se probó en navegador contra Supabase (no hay base local en este entorno): revisar visualmente en `pnpm dev` antes de desplegar.
+
+---
+
+## 14. Implementación F8.4 (guía y ajustes de la API para Atajos, 24-nov-2026)
+
+**Por qué se ajustó la API.** En «Obtener contenido de URL», el cuerpo JSON de Atajos funciona bien con campos planos de texto, pero los objetos anidados y los arreglos fallan o cierran la app (problemas reportados por usuarios en los foros de Apple). La API se adaptó para que el atajo use solo campos planos:
+
+| Cambio | Detalle |
+|---|---|
+| `/contexto` acepta campos planos | `tarjeta`, `comercio`, `monto` además del objeto `wallet`; y `modo` (`preguntar` / `automatico`). |
+| Cuerpo flexible | JSON aunque llegue sin `Content-Type` (cuerpo «Archivo» con la entrada del atajo) o formulario (`x-www-form-urlencoded` / `multipart`). |
+| Clave empaquetada | `/contexto` devuelve `clave` = `<uuid>.<base64url{fuente, tipo, comercio, alias}>`. `/registrar` usa el uuid como clave de idempotencia y toma de ahí lo que no venga en el cuerpo. Mínimo para registrar: `clave`, `origen`, `monto` (+ `descripcion`, `categoria`, `cuotas`, `revisar`). |
+| Alias como texto | `alias` acepta `"wallet_tarjeta:visa bancolombia\|sms_ultimos4:1234"` además de la lista; `/contexto` también devuelve `alias_texto`. |
+| `pedir_categoria` | Ahora `"si"` / `"no"` (comparar texto en Atajos es más confiable que comparar booleanos). |
+| Modo automático de Wallet | Con `modo: "automatico"`, monto conocido, origen reconocido por alias, últimos 4 o nombre (no solo «el último usado») y sin posible duplicado, `/contexto` responde `accion: "registrar_directo"` y `origen_sugerido_valor`; el atajo registra sin preguntar y marca *por revisar*. |
+
+**Guía dentro de la app** (`components/configuracion/guia-atajos.tsx`, en Configuración → Atajos de iPhone): cuatro secciones desplegables con cada acción en el orden en que se agrega, los valores para escribir y las variables que se eligen, la tabla de campos del cuerpo de `/registrar`, notas de permisos, limitaciones de Wallet/SMS y el plan B si el cuerpo «Archivo» no funcionara. Botón para copiar la dirección.
+
+**Las cuatro piezas:**
+1. **«Plata Clara»** (principal): `Texto` URL y token → `/contexto` (cuerpo = entrada del atajo) → si hay `mensaje`, notificar y parar → si `accion` = `ignorar`, parar → si `registrar_directo`, tomar los valores sugeridos; si no: pregunta de duplicado, elegir origen (`origenes_lista` → `origenes`), monto, descripción, cuotas si el origen empieza por `t:`, categoría opcional → `/registrar` con 7 campos de texto → notificar `mensaje`.
+2. **«Gasto rápido»**: menú Gasto / Ingreso / Dictar → diccionario → ejecutar «Plata Clara».
+3. **Automatización Wallet**: diccionario con `fuente=wallet`, tarjeta, comercio, importe y `modo` → ejecutar «Plata Clara».
+4. **Automatización Mensaje** (una por banco, por remitente): diccionario con `fuente=sms` y el texto → ejecutar «Plata Clara».
+
+**No se puede automatizar desde aquí:** los archivos `.shortcut` van firmados por Apple (se firman solo desde un Mac con `shortcuts sign`), así que los atajos se arman a mano una vez. Si más adelante quieres compartirlos, el enlace de iCloud debe salir **sin** el token.
+
+**Verificación:** 9 pruebas nuevas de las rutas con Supabase simulado (`src/app/api/atajos/v1/rutas.test.ts`: SMS, ignorar, Wallet automático, formulario y JSON sin tipo, errores de token, registro con lo mínimo, 400 / 422) y 2 de dominio (alias en texto, clave empaquetada con tildes). `pnpm check` (lint, tipos, 303 pruebas) y `next build` en verde. Falta la prueba real en el iPhone (checklist en `PUESTA-EN-MARCHA.md` §15.3).

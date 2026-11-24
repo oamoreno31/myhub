@@ -14,6 +14,7 @@ import {
 import { useState, useSyncExternalStore, useTransition } from "react";
 import { toast } from "sonner";
 import { cambiarAlias, crearTokenApi, eliminarAlias, revocarTokenApi } from "@/actions/atajos";
+import { GuiaAtajos } from "@/components/configuracion/guia-atajos";
 import { BotonConfirmar } from "@/components/formularios/boton-confirmar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -91,7 +92,13 @@ export function SeccionAtajos({
             el encabezado{" "}
             <code className="rounded bg-muted px-1.5 py-0.5 text-xs">Authorization: Bearer &lt;token&gt;</code>.
           </li>
-          <li>Prueba la conexión y listo. Si pierdes el iPhone, revoca su token aquí.</li>
+          <li>
+            Prueba la conexión y arma los atajos con la{" "}
+            <a href="#guia" className="font-semibold text-primary underline-offset-4 hover:underline">
+              guía paso a paso
+            </a>
+            . Si pierdes el iPhone, revoca su token aquí.
+          </li>
         </ol>
         {urlBase ? (
           <Button variant="outline" size="sm" className="self-start" onClick={() => copiar(urlBase, "Dirección")}>
@@ -99,6 +106,8 @@ export function SeccionAtajos({
           </Button>
         ) : null}
       </Card>
+
+      <GuiaAtajos urlBase={urlBase} />
 
       <Card className="gap-4">
         <div className="flex items-start gap-3">

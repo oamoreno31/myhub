@@ -1,7 +1,10 @@
 import {
+  type AliasAtajo,
+  aliasATexto,
   type CategoriaAtajo,
   diccionarioCategorias,
   diccionarioOrigenes,
+  empaquetarClave,
   type OrigenAtajo,
   type SugerenciaCategoria,
   textoDuplicado,
@@ -18,6 +21,7 @@ type ContextoSQL = {
   accion: "preguntar" | "ignorar";
   hoy: string;
   origen_sugerido: string | null;
+  origen_razon: "alias" | "ultimos4" | "nombre" | "reciente" | null;
   categoria_sugerida: SugerenciaCategoria;
   posible_duplicado: { hace_min: number; descripcion: string | null; origen: string; monto: number } | null;
   origenes: OrigenAtajo[];
@@ -26,13 +30,15 @@ type ContextoSQL = {
   clave: string;
 };
 
-type Alias = { tipo: "wallet_tarjeta" | "sms_ultimos4" | "nombre_dictado"; valor: string };
+/** Orígenes que se reconocieron por algo concreto (no solo "el último usado"). */
+const RAZONES_FIRMES = new Set(["alias", "ultimos4", "nombre"]);
 
 /**
  * POST /api/atajos/v1/contexto — primera llamada del atajo, antes de preguntar.
  * Interpreta el SMS, el dictado o los datos de Wallet y devuelve lo que el atajo necesita:
  * monto y descripción para prellenar, orígenes y categorías ("etiqueta → valor", sugerido primero),
- * posible duplicado, alias a aprender y la clave de idempotencia para /registrar.
+ * posible duplicado y la `clave` para /registrar (lleva empaquetados fuente, tipo, comercio y alias).
+ * Con `modo: "automatico"` y un origen reconocido, responde `accion: "registrar_directo"`.
  */
 export async function POST(request: Request) {
   const token = tokenDe(request);
@@ -46,7 +52,7 @@ export async function POST(request: Request) {
   let comercio: string | null = null;
   let descripcion: string | null = null;
   let motivo: string | null = null;
-  const alias: Alias[] = [];
+  const alias: AliasAtajo[] = [];
   const datos: Record<string, unknown> = { fuente: entrada.fuente };
 
   if (entrada.fuente === "sms" && entrada.texto) {
@@ -74,11 +80,12 @@ export async function POST(request: Request) {
     }
   } else if (entrada.fuente === "wallet") {
     monto = normalizarMonto(entrada.wallet?.monto ?? entrada.monto);
-    comercio = entrada.wallet?.comercio ?? null;
+    comercio = entrada.wallet?.comercio ?? entrada.comercio ?? null;
     descripcion = comercio;
-    if (entrada.wallet?.tarjeta) {
-      datos.tarjeta_wallet = entrada.wallet.tarjeta;
-      alias.push({ tipo: "wallet_tarjeta", valor: entrada.wallet.tarjeta });
+    const tarjeta = entrada.wallet?.tarjeta ?? entrada.tarjeta;
+    if (tarjeta) {
+      datos.tarjeta_wallet = tarjeta;
+      alias.push({ tipo: "wallet_tarjeta", valor: tarjeta });
     }
   } else {
     monto = normalizarMonto(entrada.monto);
@@ -93,19 +100,26 @@ export async function POST(request: Request) {
   if (c.accion === "ignorar") return responder({ ok: true, accion: "ignorar", motivo });
 
   const origenes = diccionarioOrigenes(c.origenes, tipoFinal);
-  const sugerido = c.origenes.find((o) => o.sugerido);
-  const etiquetaSugerida = sugerido
-    ? (origenes.lista.find((e) => origenes.mapa[e] === valorOrigen(sugerido)) ?? null)
+  const sugerido = c.origenes.find((o) => o.sugerido && (tipoFinal === "gasto" || !o.tarjeta));
+  const valorSugerido = sugerido ? valorOrigen(sugerido) : null;
+  const etiquetaSugerida = valorSugerido
+    ? (origenes.lista.find((e) => origenes.mapa[e] === valorSugerido) ?? null)
     : null;
   const pedirCategoria = tipoFinal !== "transferencia";
   const categorias = diccionarioCategorias(
     tipoFinal === "ingreso" ? c.categorias_ingreso : c.categorias_gasto,
     pedirCategoria ? c.categoria_sugerida : null,
   );
+  const directo =
+    entrada.modo === "automatico" &&
+    monto !== null &&
+    valorSugerido !== null &&
+    RAZONES_FIRMES.has(c.origen_razon ?? "") &&
+    !c.posible_duplicado;
 
   return responder({
     ok: true,
-    accion: "preguntar",
+    accion: directo ? "registrar_directo" : "preguntar",
     fuente: entrada.fuente,
     tipo: tipoFinal,
     hoy: c.hoy,
@@ -114,14 +128,22 @@ export async function POST(request: Request) {
     descripcion: descripcion ?? "",
     comercio: comercio ?? "",
     origen_sugerido: etiquetaSugerida,
+    origen_sugerido_valor: valorSugerido ?? "",
     origenes: origenes.mapa,
     origenes_lista: origenes.lista,
-    pedir_categoria: pedirCategoria,
+    // Texto y no booleano: en Atajos es más confiable comparar "si" que un booleano de JSON.
+    pedir_categoria: pedirCategoria ? "si" : "no",
     categoria_sugerida: pedirCategoria ? (c.categoria_sugerida?.nombre ?? null) : null,
     categorias: pedirCategoria ? categorias.mapa : {},
     categorias_lista: pedirCategoria ? categorias.lista : [],
     duplicado: c.posible_duplicado ? textoDuplicado(c.posible_duplicado) : null,
     alias,
-    clave: c.clave,
+    alias_texto: aliasATexto(alias),
+    clave: empaquetarClave(c.clave, {
+      fuente: entrada.fuente,
+      tipo: tipoFinal,
+      comercio: comercio ?? undefined,
+      alias: aliasATexto(alias),
+    }),
   });
 }

@@ -35,8 +35,20 @@ export function fallo(mensaje: string, status: number) {
 export const SIN_TOKEN = () =>
   fallo("Falta el token. Configúralo en el atajo (Plata Clara → Configuración → Atajos de iPhone).", 401);
 
-/** Lee el cuerpo JSON; un cuerpo vacío o inválido cuenta como {}. */
+/**
+ * Lee el cuerpo: JSON (aunque llegue sin Content-Type, como "Archivo" desde Atajos) o formulario
+ * ("Formulario" en Atajos). Un cuerpo vacío o inválido cuenta como {}.
+ */
 export async function leerJson(request: Request): Promise<unknown> {
+  const tipo = request.headers.get("content-type") ?? "";
+  if (/multipart\/form-data|application\/x-www-form-urlencoded/i.test(tipo)) {
+    try {
+      const datos = await request.formData();
+      return Object.fromEntries([...datos.entries()].filter(([, v]) => typeof v === "string"));
+    } catch {
+      return {};
+    }
+  }
   try {
     const texto = await request.text();
     return texto.trim() ? JSON.parse(texto) : {};

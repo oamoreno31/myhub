@@ -518,12 +518,25 @@ export const contextoAtajoSchema = z.object({
     .optional()
     .catch(undefined),
   monto: montoAtajo.catch(undefined),
+  /** Campos planos de Wallet (más fáciles de enviar desde Atajos que el objeto `wallet`). */
+  tarjeta: textoAtajo(80).catch(undefined),
+  comercio: textoAtajo(120).catch(undefined),
+  /** "automatico": si ya se conoce el origen, el atajo registra sin preguntar (queda por revisar). */
+  modo: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase().replace("á", "a") : v),
+    z.enum(["preguntar", "automatico"]).catch("preguntar"),
+  ),
 });
 
 export const registrarAtajoSchema = z.object({
-  clave: z.preprocess(vacioAUndefined, z.string().trim().min(8).max(80).optional()),
-  fuente: fuenteAtajo,
-  tipo: tipoAtajo.transform((t) => t ?? "gasto"),
+  /** La de /contexto: "<uuid>.<datos>" (fuente, tipo, comercio y alias empaquetados). */
+  clave: z.preprocess(vacioAUndefined, z.string().trim().min(8).max(1500).optional()),
+  /** Opcionales: si no vienen, se toman de la clave empaquetada. */
+  fuente: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() : vacioAUndefined(v)),
+    z.enum(FUENTES_ATAJO).optional().catch(undefined),
+  ),
+  tipo: tipoAtajo,
   /** "t:<id>", "c:<id>" o el id de la cuenta. */
   origen: z.preprocess(
     (v) => (typeof v === "string" ? v.trim().replace(/^[tc]:/i, "") : v),
@@ -558,14 +571,19 @@ export const registrarAtajoSchema = z.object({
       (typeof v === "string" && ["true", "1", "si", "sí", "yes"].includes(v.trim().toLowerCase())),
     z.boolean(),
   ),
+  /** Lista [{tipo, valor}] o texto "tipo:valor|tipo:valor" (más fácil desde Atajos). */
   alias: z
-    .array(
-      z.object({
-        tipo: z.enum(["wallet_tarjeta", "sms_ultimos4", "nombre_dictado"]),
-        valor: z.string().trim().min(1).max(80),
-      }),
-    )
-    .max(3)
+    .union([
+      z.string().max(400),
+      z
+        .array(
+          z.object({
+            tipo: z.enum(["wallet_tarjeta", "sms_ultimos4", "nombre_dictado"]),
+            valor: z.string().trim().min(1).max(80),
+          }),
+        )
+        .max(3),
+    ])
     .optional()
     .catch(undefined),
 });

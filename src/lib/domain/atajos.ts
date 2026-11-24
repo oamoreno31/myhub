@@ -184,3 +184,71 @@ export function haceCuanto(iso: string | null, ahora: Date = new Date()): string
   const d = Math.floor(h / 24);
   return d === 1 ? "hace 1 día" : `hace ${d} días`;
 }
+
+// ---------------------------------------------------------------------------
+// Formato amable para Atajos: el cuerpo JSON de "Obtener contenido de URL" solo funciona bien con
+// campos planos de texto. Por eso los alias viajan como texto y la clave lleva empaquetado lo que
+// /registrar necesita de /contexto (fuente, tipo, comercio, alias).
+// ---------------------------------------------------------------------------
+
+export type TipoAlias = "wallet_tarjeta" | "sms_ultimos4" | "nombre_dictado";
+export type AliasAtajo = { tipo: TipoAlias; valor: string };
+const TIPOS_ALIAS = new Set<string>(["wallet_tarjeta", "sms_ultimos4", "nombre_dictado"]);
+
+/** [{tipo, valor}] → "wallet_tarjeta:visa bancolombia|sms_ultimos4:1234". */
+export function aliasATexto(alias: AliasAtajo[]): string {
+  return alias.map((a) => `${a.tipo}:${a.valor.replace(/[|]/g, " ")}`).join("|");
+}
+
+/** Inverso de aliasATexto; ignora lo que no tenga formato válido. Máximo 3. */
+export function aliasDeTexto(texto: string | null | undefined): AliasAtajo[] {
+  if (!texto) return [];
+  return texto
+    .split("|")
+    .map((parte) => {
+      const i = parte.indexOf(":");
+      const tipo = parte.slice(0, i).trim();
+      const valor = parte.slice(i + 1).trim();
+      return i > 0 && TIPOS_ALIAS.has(tipo) && valor && valor.length <= 80 ? { tipo: tipo as TipoAlias, valor } : null;
+    })
+    .filter((a): a is AliasAtajo => a !== null)
+    .slice(0, 3);
+}
+
+export type PaqueteClave = { fuente?: string; tipo?: string; comercio?: string; alias?: string };
+
+function aBase64Url(texto: string): string {
+  const bytes = new TextEncoder().encode(texto);
+  let binario = "";
+  for (const b of bytes) binario += String.fromCharCode(b);
+  return btoa(binario).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function deBase64Url(texto: string): string {
+  const b64 = texto.replace(/-/g, "+").replace(/_/g, "/");
+  const binario = atob(b64 + "===".slice((b64.length + 3) % 4));
+  return new TextDecoder().decode(Uint8Array.from(binario, (c) => c.charCodeAt(0)));
+}
+
+/** "<uuid>.<datos en base64url>": la parte antes del punto es la clave de idempotencia. */
+export function empaquetarClave(clave: string, paquete: PaqueteClave): string {
+  const limpio = Object.fromEntries(Object.entries(paquete).filter(([, v]) => v !== undefined && v !== ""));
+  return Object.keys(limpio).length ? `${clave}.${aBase64Url(JSON.stringify(limpio))}` : clave;
+}
+
+/** Separa la clave de idempotencia y los datos empaquetados (si los hay y son válidos). */
+export function desempaquetarClave(texto: string): { clave: string; paquete: PaqueteClave } {
+  const i = texto.indexOf(".");
+  if (i < 0) return { clave: texto, paquete: {} };
+  const clave = texto.slice(0, i);
+  try {
+    const datos = JSON.parse(deBase64Url(texto.slice(i + 1))) as Record<string, unknown>;
+    const paquete: PaqueteClave = {};
+    for (const k of ["fuente", "tipo", "comercio", "alias"] as const) {
+      if (typeof datos[k] === "string") paquete[k] = (datos[k] as string).slice(0, 200);
+    }
+    return { clave, paquete };
+  } catch {
+    return { clave, paquete: {} };
+  }
+}

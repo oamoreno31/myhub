@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  aliasATexto,
+  aliasDeTexto,
   CLASIFICAR_DESPUES,
+  desempaquetarClave,
+  empaquetarClave,
   diccionario,
   diccionarioCategorias,
   diccionarioOrigenes,
@@ -174,5 +178,37 @@ describe("pantalla de atajos", () => {
     expect(fuenteDeRegistro("atajo_sms")).toBe("SMS");
     expect(fuenteDeRegistro("app")).toBeNull();
     expect(fuenteDeRegistro(null)).toBeNull();
+  });
+});
+
+describe("formato amable para Atajos", () => {
+  it("alias como texto, ida y vuelta", () => {
+    const alias = [
+      { tipo: "wallet_tarjeta" as const, valor: "Visa Bancolombia" },
+      { tipo: "sms_ultimos4" as const, valor: "1234" },
+    ];
+    expect(aliasATexto(alias)).toBe("wallet_tarjeta:Visa Bancolombia|sms_ultimos4:1234");
+    expect(aliasDeTexto(aliasATexto(alias))).toEqual(alias);
+    expect(aliasDeTexto("otro:x|sms_ultimos4:|nombre_dictado:nequi|basura")).toEqual([
+      { tipo: "nombre_dictado", valor: "nequi" },
+    ]);
+    expect(aliasDeTexto("")).toEqual([]);
+  });
+
+  it("clave empaquetada (con tildes) y clave simple", () => {
+    const k = empaquetarClave("44444444-4444-4444-8444-444444444444", {
+      fuente: "wallet",
+      tipo: "gasto",
+      comercio: "Panadería Ñapa",
+      alias: "",
+    });
+    expect(k).toMatch(/^44444444-4444-4444-8444-444444444444\.[A-Za-z0-9_-]+$/);
+    expect(desempaquetarClave(k)).toEqual({
+      clave: "44444444-4444-4444-8444-444444444444",
+      paquete: { fuente: "wallet", tipo: "gasto", comercio: "Panadería Ñapa" },
+    });
+    expect(empaquetarClave("abc12345", {})).toBe("abc12345");
+    expect(desempaquetarClave("prueba-0001-clave")).toEqual({ clave: "prueba-0001-clave", paquete: {} });
+    expect(desempaquetarClave("abc12345.%%%")).toEqual({ clave: "abc12345", paquete: {} });
   });
 });

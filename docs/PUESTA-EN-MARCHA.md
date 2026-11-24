@@ -239,6 +239,47 @@ Aplica la migración nueva (`pnpm db:push`, o en local `pnpm db:reset`) y, si qu
 - [ ] **Respaldo:** *Descargar respaldo ahora* baja un JSON. Para probar la restauración, registra algo de prueba, elige el JSON en *Restaurar un respaldo*, revisa la vista previa y confirma: vuelve al estado del archivo.
 - [ ] **Cron:** Vercel → Settings → Cron Jobs → `/api/cron/diario` → *Run*. Con obligaciones vencidas o por vencer llega el correo; con `?respaldo=1` (probándolo con `curl` y `Authorization: Bearer <CRON_SECRET>`) aparece un respaldo en Datos y respaldo → *Respaldos automáticos*.
 
+## 15. Fase 8: captura desde iPhone (Atajos)
+
+Detalle técnico en `docs/08-atajos-iphone.md`. La guía acción por acción también está **dentro de la app** (Configuración → Atajos de iPhone → *Guía*): ábrela en el iPhone para copiar valores mientras armas.
+
+### 15.1 Preparar
+1. Aplica las migraciones `20261124000100_atajos.sql` y `20261124000200_bandeja_revision.sql`: `pnpm db:push` (en local, `pnpm db:reset`). Luego `pnpm db:types`.
+2. Despliega en Vercel (la API vive en `https://<tu-dominio>/api/atajos/v1`).
+3. En la app: **Configuración → Atajos de iPhone → Crear token** con el nombre del iPhone. Copia el token (se muestra una vez) y toca **Probar conexión**: debe decir cuántos orígenes verá el atajo.
+
+### 15.2 Armar en el iPhone (≈ 20 min, una sola vez)
+| # | Pieza | Qué hace |
+|---|---|---|
+| 1 | Atajo **«Plata Clara»** (el nombre exacto importa) | Consulta `/contexto`, pregunta origen, monto y descripción (cuotas si es tarjeta; categoría opcional) y registra en `/registrar`. Guarda la dirección y el token. |
+| 2 | Atajo **«Gasto rápido»** | Menú Gasto / Ingreso / Dictar → llama a «Plata Clara». Para Siri, botón de acción, inicio, centro de control y toque posterior. |
+| 3 | Automatización **Wallet** (o *Transacción* en iOS 17–25) | Al pagar con Apple Pay: `fuente=wallet`, tarjeta, comercio, importe y `modo` (`preguntar` o `automatico`). |
+| 4 | Automatización **Mensaje**, una por banco | Remitente = contacto creado con el número corto del banco; `fuente=sms`, `texto` = el mensaje. |
+
+Las automatizaciones van con **Ejecutar inmediatamente**. La primera vez que el atajo se conecte, iOS pregunta: elige **Permitir siempre**.
+
+### 15.3 Checklist de aceptación de la Fase 8
+- [ ] **Probar conexión** en Configuración responde ✓.
+- [ ] «Gasto rápido» → Gasto: pregunta origen, monto y descripción; la notificación dice «✓ Gasto de $ … · Nequi · …». Aparece en Movimientos con el ícono de iPhone y la fecha de hoy.
+- [ ] Con una **tarjeta de crédito** como origen pregunta cuotas y crea la compra en la tarjeta (sube el saldo usado).
+- [ ] **Dictar** «Gasté 25 mil en almuerzo con Nequi» → $ 25.000, *Almuerzo*, Nequi preseleccionado arriba.
+- [ ] **Apple Pay:** al pagar, el atajo prellena comercio e importe; la segunda vez la tarjeta ya viene primera (aprendió el alias; se ve en *Lo que el atajo aprendió*).
+- [ ] **SMS del banco:** al llegar una compra, prellena monto, comercio y la tarjeta por los últimos 4. Si ya la registraste por Wallet, pregunta «¿Ya registraste…?».
+- [ ] Un SMS de **clave o publicidad** no hace nada (en *Actividad reciente* sale «— SMS ignorado»).
+- [ ] Sin categoría confiable, el registro queda en **Por revisar** (aviso en Inicio). Al confirmarlo con una categoría sale de la bandeja; tras dos confirmaciones del mismo comercio, el siguiente se clasifica solo.
+- [ ] **Revocar** el token: el atajo muestra «⚠️ Token inválido o revocado» y no registra.
+- [ ] Antes de compartir el atajo «Plata Clara», borra el token de su acción *Texto*.
+
+### 15.4 Si algo falla
+| Síntoma | Causa probable | Solución |
+|---|---|---|
+| «⚠️ Falta el token» | Encabezado mal escrito | `Authorization` = `Bearer ` (con espacio) + token |
+| «⚠️ Token inválido o revocado» | Token copiado incompleto o revocado | Crea otro token y pégalo en el atajo |
+| «⚠️ Elige el origen del pago» siempre | La consulta no envió la entrada | Cambia el cuerpo de la primera consulta de *Archivo* a *JSON* con campos planos (ver nota en la guía) |
+| Wallet no dispara o el importe llega en 0 | Limitación de iOS con algunas tarjetas | El monto se confirma siempre; el SMS sirve de respaldo |
+| SMS de un banco no se entiende | Formato de ese banco | Revisa *Actividad reciente* y envíame el SMS (sin saldos) para ajustar el intérprete (F8.0) |
+| La automatización no pregunta | iPhone bloqueado | Desbloquéalo, o usa `modo = automatico` en Wallet |
+
 ## Problemas comunes
 
 | Síntoma | Causa probable | Solución |
