@@ -1,8 +1,12 @@
+import { InboxIcon } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { EncabezadoPagina } from "@/components/layout/encabezado-pagina";
+import { BandejaRevision } from "@/components/movimientos/bandeja-revision";
 import { FiltrosMovimientos } from "@/components/movimientos/filtros";
 import { ListaMovimientos, type MovimientoUI } from "@/components/movimientos/lista";
 import { Card } from "@/components/ui/card";
+import { contarPorRevisar, obtenerPorRevisar } from "@/lib/atajos-datos";
 import { obtenerCatalogos } from "@/lib/datos";
 import { formatearCOP } from "@/lib/domain/dinero";
 import { hoyISO } from "@/lib/domain/obligaciones";
@@ -30,6 +34,29 @@ function id(v: string | string[] | undefined) {
 
 export default async function MovimientosPage({ searchParams }: PageProps<"/movimientos">) {
   const sp = await searchParams;
+
+  // Bandeja "Por revisar" (lo que llegó del iPhone sin categoría confiable), de todos los meses.
+  if (texto(sp.revisar) === "1") {
+    const [items, catalogos] = await Promise.all([obtenerPorRevisar(), obtenerCatalogos()]);
+    return (
+      <div className="flex flex-col gap-6">
+        <EncabezadoPagina
+          titulo="Por revisar"
+          descripcion={`${items.length} registro${items.length === 1 ? "" : "s"} del iPhone esperando categoría o confirmación`}
+        />
+        <Link href="/movimientos" className="self-start text-sm font-semibold text-primary hover:underline">
+          ← Todos los movimientos
+        </Link>
+        <BandejaRevision
+          items={items}
+          categorias={catalogos.categorias}
+          cuentas={catalogos.cuentas}
+          hoy={hoyISO(new Date(), serverEnv().APP_TIMEZONE)}
+        />
+      </div>
+    );
+  }
+
   const seleccionado = await obtenerPeriodoSeleccionado();
   const periodo = esPeriodoValido(texto(sp.periodo)) ? texto(sp.periodo)! : seleccionado;
   const tipo = TIPOS.find((t) => t === texto(sp.tipo));
@@ -76,11 +103,12 @@ export default async function MovimientosPage({ searchParams }: PageProps<"/movi
     );
   }
 
-  const [{ data, error }, catalogos, compras, tarjetas] = await Promise.all([
+  const [{ data, error }, catalogos, compras, tarjetas, porRevisar] = await Promise.all([
     consulta,
     obtenerCatalogos(),
     incluirCompras ? consultaCompras : null,
     supabase.from("tarjetas_credito").select("id, cuenta_id"),
+    contarPorRevisar(),
   ]);
   const tarjetaDeCuenta = new Map((tarjetas.data ?? []).map((t) => [t.cuenta_id, t.id]));
   const cuentaDeTarjeta = new Map((tarjetas.data ?? []).map((t) => [t.id, t.cuenta_id]));
@@ -110,6 +138,8 @@ export default async function MovimientosPage({ searchParams }: PageProps<"/movi
     reembolsado: Boolean(m.reembolsado_por_id),
     adjunto_path: m.adjunto_path,
     created_at: m.created_at ?? "",
+    por_revisar: Boolean(m.por_revisar),
+    origen_registro: m.origen_registro,
   }));
 
   for (const c of compras?.data ?? []) {
@@ -139,6 +169,8 @@ export default async function MovimientosPage({ searchParams }: PageProps<"/movi
       num_cuotas: c.num_cuotas ?? 1,
       adjunto_path: c.adjunto_path,
       created_at: c.created_at ?? "",
+      por_revisar: Boolean(c.por_revisar),
+      origen_registro: c.origen_registro,
     });
   }
   movimientos.sort((a, b) => b.fecha.localeCompare(a.fecha) || b.created_at.localeCompare(a.created_at));
@@ -164,6 +196,19 @@ export default async function MovimientosPage({ searchParams }: PageProps<"/movi
             : `Ingresos, gastos, compras con tarjeta y transferencias de ${nombrePeriodo(periodo)}`
         }
       />
+
+      {porRevisar > 0 ? (
+        <Link
+          href="/movimientos?revisar=1"
+          className="flex items-center gap-2 rounded-xl bg-warning-soft px-4 py-3 text-sm font-semibold text-warning hover:underline"
+        >
+          <InboxIcon className="size-4 shrink-0" aria-hidden="true" />
+          {porRevisar === 1
+            ? "1 registro del iPhone espera revisión."
+            : `${porRevisar} registros del iPhone esperan revisión.`}
+          <span className="ml-auto">Revisar →</span>
+        </Link>
+      ) : null}
 
       <FiltrosMovimientos
         periodo={periodo}

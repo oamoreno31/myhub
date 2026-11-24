@@ -145,6 +145,15 @@ id · user_id · nombre · tipo `tipo_meta` · monto_objetivo · fecha_objetivo 
 id · user_id · entidad · entidad_id · accion · antes jsonb · despues jsonb · creado_en
 > Registra reapertura de meses, borrados y ediciones en meses cerrados.
 
+### 3.19 Captura desde iPhone (F8, docs/08)
+| Tabla | Campos | Nota |
+|---|---|---|
+| `tokens_api` | id · user_id · nombre · prefijo · token_hash (sha256 hex, único) · alcances · usos · ultimo_uso_en · ultimo_uso_fuente · expira_en · revocado_en | El usuario lee todo menos `token_hash` (permiso por columnas). Se crean con `crear_token_api(nombre)`, que devuelve el token una sola vez. No va al respaldo. |
+| `alias_origen` | id · user_id · tipo (`wallet_tarjeta`, `sms_ultimos4`, `nombre_dictado`) · valor (clave normalizada) · cuenta_id · usos · ultimo_uso | Único `(user_id, tipo, valor)`. Va al respaldo. |
+| `capturas_atajo` | id · user_id · token_id · fuente · etapa (`contexto`, `registrar`) · resultado (`consultado`, `ignorado`, `registrado`, `repetido`, `rechazado`) · mensaje · movimiento_id · compra_tc_id · texto_enmascarado · creado_en | Solo lectura para el dueño; la escriben las funciones de atajo; base del límite de frecuencia; purga a 30 días. |
+
+`movimientos` y `compras_tc` agregan `origen_registro` (`app`, `atajo_wallet`, `atajo_sms`, `atajo_rapido`, `atajo_dictado`), `por_revisar` y `clave_idempotencia` (única por usuario). Vista `v_por_revisar` (F8.3): movimientos y compras con `por_revisar`, con origen, categoría, `por_clasificar` y estado del mes. Trigger `*_30_por_revisar`: un registro con la categoría de sistema *Por clasificar* siempre queda por revisar. Funciones: `atajo_contexto(token, datos)`, `atajo_registrar(token, datos)` (ejecutables por `anon`: el token es la credencial), `clave_texto(texto)`, `purgar_capturas_atajo()` (service_role).
+
 ## 4. Vistas
 
 | Vista | Contenido | Pantalla |

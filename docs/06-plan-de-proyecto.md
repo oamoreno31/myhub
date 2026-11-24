@@ -113,6 +113,14 @@ Supuesto de dedicación: ~12 h/semana (en paralelo con Devtopia). Ajustable.
 - [x] Rendimiento y accesibilidad: formularios pesados y pestañas secundarias cargados al abrirse, fuentes con `next/font`, tablas desplazables enfocables, gráficas con un control accesible (slider) en vez de elementos interactivos dentro del SVG, `robots.txt`. Lighthouse móvil (mediana de 3): rendimiento ≥ 90 en todas las pantallas, accesibilidad 100, buenas prácticas 100
 - Cambios frente al diseño: exportación con `exceljs` (no SheetJS). El respaldo semanal se dispara desde el cron diario los domingos (Vercel Hobby permite un cron diario). Los comprobantes no viajan en el respaldo JSON. La restauración está limitada a ~4 MB por el tamaño máximo de cuerpo de Vercel (respaldos mayores, desde la base de datos). El SEO de Lighthouse es bajo a propósito: la app es privada y no se indexa.
 
+### F8 — Captura desde iPhone (docs/08) — en curso
+- [x] **F8.1** Migración `20261124000100_atajos.sql`: `tokens_api` (solo sha256; `crear_token_api` / `revocar_token_api`, máx. 5 activos), `alias_origen` (aprendizaje tarjeta de Wallet / últimos 4 / nombre dictado → cuenta; entra al respaldo), `capturas_atajo` (bitácora técnica, purga a 30 días en el cron diario), columnas `origen_registro`, `por_revisar`, `clave_idempotencia` en movimientos y compras con tarjeta (y en `v_movimientos` / `v_compras_tc`), categoría de sistema *Por clasificar* (se crea si falta), `atajo_contexto` y `atajo_registrar` (security definer, límite 40/min y 400/día por token). La restauración ahora completa con su valor por defecto las columnas obligatorias que un respaldo anterior no trae. 22 pruebas PGlite (`tests/db/atajos.test.ts`), incluido aislamiento entre usuarios
+- [x] **F8.2** `lib/domain/interpretar.ts` (montos en cualquier formato, SMS, dictado; espejo `claveTexto` ↔ `clave_texto`) y `lib/domain/atajos.ts` (diccionarios etiqueta → valor, mensajes) con 55 pruebas; rutas `POST /api/atajos/v1/contexto` y `/registrar` (token en `Authorization: Bearer`, llave publicable, sin secret key), esquemas Zod en `validaciones.ts`, `api/atajos/` fuera del proxy de sesión, tipos en `database.ts`
+- [ ] **F8.0** SMS reales anonimizados por banco → casos en `interpretar.test.ts` (los actuales son ilustrativos)
+- [x] **F8.3** UI: **Configuración → Atajos de iPhone** (crear token —se muestra una vez, con copiar y *Probar conexión*—, revocar, dirección de la API, alias aprendidos editables, actividad de 30 días con el SMS enmascarado) y **bandeja *Por revisar*** (`/movimientos?revisar=1`: elegir categoría y confirmar uno a uno o en lote, editar; aviso en Inicio y Movimientos; marca "Por revisar" e ícono de iPhone en la lista). Migración `20261124000200_bandeja_revision.sql`: vista `v_por_revisar` y regla "*Por clasificar* ⇒ por revisar"; editar desde la app apaga la marca. 4 pruebas PGlite + 3 de dominio
+- [ ] **F8.4** Construir los atajos en el iPhone, enlaces iCloud sin token y guía en `PUESTA-EN-MARCHA.md`
+- Cambios frente al diseño: el origen viaja como `t:<id>` (tarjeta) o `c:<id>` (cuenta), siempre con el id de la cuenta; no se agregó `cuentas.ultimos4` (los últimos 4 de cuentas de ahorro se aprenden como alias); se agregó el **retiro en cajero** (transferencia a la cuenta de efectivo); "Clasificar después" = `auto` (usa la sugerencia si es confiable, si no queda *Por clasificar*); los errores de token y frecuencia salen de SQL con SQLSTATE `PT401` / `PT429` (PostgREST los convierte en ese código HTTP).
+
 ## 4. Definición de terminado (por historia)
 
 1. Cumple criterios de aceptación del doc 01.
@@ -142,7 +150,7 @@ Supuesto de dedicación: ~12 h/semana (en paralelo con Devtopia). Ajustable.
 - Modo compartido (pareja/familia) con gastos compartidos.
 - Reporte anual para declaración de renta.
 - Asistente con IA: "¿en qué puedo recortar este mes?" sobre los datos propios.
-- Widgets/atajos del celular para registrar gasto.
+- ~~Widgets/atajos del celular para registrar gasto.~~ → F8 (docs/08).
 
 ## 7. Decisiones que conviene confirmar antes de F1
 

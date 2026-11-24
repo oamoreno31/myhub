@@ -20,6 +20,7 @@ type Paso = { ok: boolean; [k: string]: unknown };
  * 2. Correo de recordatorios: vencidas y lo que vence en ≤ 3 días (si hay RESEND_API_KEY).
  * 3. Domingos: respaldo JSON de cada usuario en Storage (retención 8 semanas).
  *    `?respaldo=1` lo fuerza cualquier día (para probar).
+ * 4. Purga la bitácora técnica de los Atajos de iPhone (> 30 días).
  */
 export async function GET(request: Request) {
   if (!autorizarCron(request)) {
@@ -77,6 +78,12 @@ export async function GET(request: Request) {
     } catch (e) {
       resultado.respaldo = { ok: false, error: (e as Error).message };
     }
+  }
+
+  // 4. Bitácora técnica de los Atajos de iPhone: se guarda 30 días.
+  {
+    const { data, error } = await admin.rpc("purgar_capturas_atajo");
+    resultado.atajos = error ? { ok: false, error: error.message } : { ok: true, purgadas: data };
   }
 
   const ok = Object.values(resultado).every((p) => p.ok);

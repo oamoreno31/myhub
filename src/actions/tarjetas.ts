@@ -122,7 +122,8 @@ export async function guardarCompra(_prev: EstadoAccion, formData: FormData): Pr
   const { data, error } = id
     ? await supabase
         .from("compras_tc")
-        .update({ ...fila, ...conAdjunto })
+        // Editarla cuenta como revisada (si sigue en "Por clasificar", la BD la deja en la bandeja).
+        .update({ ...fila, ...conAdjunto, por_revisar: false })
         .eq("id", id)
         .select("id")
         .single()

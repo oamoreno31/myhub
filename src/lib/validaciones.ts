@@ -481,6 +481,98 @@ export const pilaSchema = z.object({
   smmlv: monto(),
 });
 
+// ---------------------------------------------------------------------------
+// API de Atajos de iPhone (docs/08 §3.2). Atajos envía JSON donde casi todo puede llegar como
+// texto (o vacío): se normaliza aquí; el monto lo interpreta `normalizarMonto` en la ruta.
+// ---------------------------------------------------------------------------
+
+const vacioAUndefined = (v: unknown) =>
+  v === null || v === undefined || (typeof v === "string" && v.trim() === "") ? undefined : v;
+const textoAtajo = (max: number) =>
+  z.preprocess(
+    (v) => (typeof v === "number" ? String(v) : vacioAUndefined(v)),
+    z.string().trim().max(max, `Máximo ${max} caracteres`).optional(),
+  );
+const montoAtajo = z.preprocess(vacioAUndefined, z.union([z.string(), z.number()]).optional());
+
+export const FUENTES_ATAJO = ["wallet", "sms", "rapido", "dictado"] as const;
+export const TIPOS_ATAJO = ["gasto", "ingreso", "transferencia"] as const;
+const fuenteAtajo = z.preprocess(
+  (v) => (typeof v === "string" ? v.trim().toLowerCase() : v),
+  z.enum(FUENTES_ATAJO).catch("rapido"),
+);
+const tipoAtajo = z.preprocess(
+  (v) => (typeof v === "string" ? v.trim().toLowerCase() : vacioAUndefined(v)),
+  z.enum(TIPOS_ATAJO, { message: "Tipo inválido: usa gasto, ingreso o transferencia" }).optional(),
+);
+
+export const contextoAtajoSchema = z.object({
+  fuente: fuenteAtajo,
+  tipo: tipoAtajo.catch(undefined),
+  /** Texto del SMS o frase dictada. */
+  texto: textoAtajo(1000).catch(undefined),
+  /** Datos de la automatización Wallet: tarjeta, comercio y monto de la transacción. */
+  wallet: z
+    .object({ tarjeta: textoAtajo(80), comercio: textoAtajo(120), monto: montoAtajo })
+    .partial()
+    .optional()
+    .catch(undefined),
+  monto: montoAtajo.catch(undefined),
+});
+
+export const registrarAtajoSchema = z.object({
+  clave: z.preprocess(vacioAUndefined, z.string().trim().min(8).max(80).optional()),
+  fuente: fuenteAtajo,
+  tipo: tipoAtajo.transform((t) => t ?? "gasto"),
+  /** "t:<id>", "c:<id>" o el id de la cuenta. */
+  origen: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().replace(/^[tc]:/i, "") : v),
+    z.uuid({ message: "Elige el origen del pago" }),
+  ),
+  /** Solo transferencias: id de la cuenta destino o "efectivo" (por defecto). */
+  destino: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().replace(/^c:/i, "") : vacioAUndefined(v)),
+    z.union([z.uuid(), z.literal("efectivo")], { message: "Destino inválido" }).optional(),
+  ),
+  monto: z.preprocess(vacioAUndefined, z.union([z.string(), z.number()], { message: "Escribe el monto" })),
+  descripcion: textoAtajo(200),
+  comercio: textoAtajo(80),
+  /** "auto" (por defecto), "pendiente" o el id de una categoría. */
+  categoria: z.preprocess(
+    vacioAUndefined,
+    z.union([z.literal("auto"), z.literal("pendiente"), z.uuid()], { message: "Categoría inválida" }).optional(),
+  ),
+  cuotas: z.preprocess(
+    vacioAUndefined,
+    z.coerce
+      .number({ message: "Cuotas inválidas" })
+      .int()
+      .min(1, "Las cuotas van de 1 a 48")
+      .max(48, "Las cuotas van de 1 a 48")
+      .optional(),
+  ),
+  revisar: z.preprocess(
+    (v) =>
+      v === true ||
+      v === 1 ||
+      (typeof v === "string" && ["true", "1", "si", "sí", "yes"].includes(v.trim().toLowerCase())),
+    z.boolean(),
+  ),
+  alias: z
+    .array(
+      z.object({
+        tipo: z.enum(["wallet_tarjeta", "sms_ultimos4", "nombre_dictado"]),
+        valor: z.string().trim().min(1).max(80),
+      }),
+    )
+    .max(3)
+    .optional()
+    .catch(undefined),
+});
+
+export type ContextoAtajo = z.infer<typeof contextoAtajoSchema>;
+export type RegistrarAtajo = z.infer<typeof registrarAtajoSchema>;
+
 export type ErroresCampo = Record<string, string>;
 
 /** Primer mensaje por campo, listo para pintar bajo cada input. */

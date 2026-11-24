@@ -36,7 +36,8 @@ export async function guardarMovimiento(_prev: EstadoAccion, formData: FormData)
   const { data, error } = id
     ? await supabase
         .from("movimientos")
-        .update({ ...fila, ...conAdjunto })
+        // Editarlo cuenta como revisado (si sigue en "Por clasificar", la BD lo deja en la bandeja).
+        .update({ ...fila, ...conAdjunto, por_revisar: false })
         .eq("id", id)
         .select("id")
         .single()

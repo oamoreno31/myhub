@@ -8,7 +8,9 @@ import {
   SeccionCuentas,
   SeccionObligaciones,
 } from "@/components/configuracion/secciones";
+import { SeccionAtajos } from "@/components/configuracion/seccion-atajos";
 import { SeccionDatos } from "@/components/configuracion/seccion-datos";
+import { obtenerDatosAtajos } from "@/lib/atajos-datos";
 import { EncabezadoPagina } from "@/components/layout/encabezado-pagina";
 import { BUCKET_RESPALDOS } from "@/lib/respaldos";
 import { Card } from "@/components/ui/card";
@@ -27,6 +29,7 @@ const SECCIONES = [
   { clave: "categorias", etiqueta: "Categorías" },
   { clave: "preferencias", etiqueta: "Preferencias" },
   { clave: "datos", etiqueta: "Datos y respaldo" },
+  { clave: "atajos", etiqueta: "Atajos de iPhone" },
 ] as const;
 
 type Seccion = (typeof SECCIONES)[number]["clave"];
@@ -102,6 +105,14 @@ export default async function ConfiguracionPage({ searchParams }: PageProps<"/co
         periodoActual={periodoActual}
       />
     );
+  } else if (seccion === "atajos") {
+    const datos = await obtenerDatosAtajos();
+    contenido = (
+      <SeccionAtajos
+        {...datos}
+        cuentas={catalogos.todasLasCuentas.map((c) => ({ id: c.id, nombre: c.nombre, tipo: c.tipo, activa: c.activa }))}
+      />
+    );
   } else if (seccion === "datos") {
     const { data: sesion } = await supabase.auth.getClaims();
     const { data: archivos } = await supabase.storage
@@ -129,7 +140,7 @@ export default async function ConfiguracionPage({ searchParams }: PageProps<"/co
     <div className="flex flex-col gap-6">
       <EncabezadoPagina
         titulo="Configuración"
-        descripcion="Tus obligaciones recurrentes, cuentas, categorías, preferencias y tus datos."
+        descripcion="Tus obligaciones recurrentes, cuentas, categorías, preferencias, tus datos y los atajos del iPhone."
       />
       <nav aria-label="Secciones de configuración" className="-mx-4 overflow-x-auto px-4">
         <ul className="flex w-max gap-1 rounded-xl bg-secondary p-1">

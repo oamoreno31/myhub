@@ -11,6 +11,7 @@ import {
   LockIcon,
   PaperclipIcon,
   PiggyBankIcon,
+  SmartphoneIcon,
   Trash2Icon,
   WalletIcon,
 } from "lucide-react";
@@ -35,6 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { CategoriaBasica } from "@/lib/categorias";
+import { fuenteDeRegistro } from "@/lib/domain/atajos";
 import { formatearCOP } from "@/lib/domain/dinero";
 import { cn } from "@/lib/utils";
 
@@ -76,6 +78,10 @@ export type MovimientoUI = {
   num_cuotas?: number;
   adjunto_path?: string | null;
   created_at: string;
+  /** Llegó del iPhone sin categoría confiable (bandeja "Por revisar"). */
+  por_revisar?: boolean;
+  /** "app" o "atajo_<fuente>". */
+  origen_registro?: string | null;
 };
 
 /** Entra dinero (y se muestra con "+"). */
@@ -309,6 +315,18 @@ export function ListaMovimientos({
                               ) : (
                                 <Badge variant="warning">Reembolsable</Badge>
                               )
+                            ) : null}
+                            {m.por_revisar ? <Badge variant="warning">Por revisar</Badge> : null}
+                            {fuenteDeRegistro(m.origen_registro) ? (
+                              <span
+                                title={`Registrado desde el iPhone (${fuenteDeRegistro(m.origen_registro)})`}
+                                className="text-muted-foreground"
+                              >
+                                <SmartphoneIcon className="size-3.5" aria-hidden="true" />
+                                <span className="sr-only">
+                                  Registrado desde el iPhone ({fuenteDeRegistro(m.origen_registro)})
+                                </span>
+                              </span>
                             ) : null}
                             {m.adjunto_path ? (
                               <span title="Con comprobante" className="text-muted-foreground">

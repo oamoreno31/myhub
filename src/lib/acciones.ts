@@ -10,6 +10,8 @@ export type EstadoAccion = {
   /** Cambia en cada envío exitoso para que el cliente reaccione (cerrar hoja, toast). */
   marca?: number;
   id?: string;
+  /** Token de Atajos recién creado: se muestra una sola vez. */
+  token?: string;
 };
 
 export const ESTADO_INICIAL: EstadoAccion = {};

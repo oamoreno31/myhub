@@ -3,6 +3,7 @@ import {
   ArrowRightIcon,
   CreditCardIcon,
   HandCoinsIcon,
+  InboxIcon,
   LandmarkIcon,
   LockIcon,
   PiggyBankIcon,
@@ -30,6 +31,7 @@ import { nombrePeriodo, primerDiaDelPeriodo } from "@/lib/domain/periodos";
 import { serverEnv } from "@/lib/env.server";
 import { obtenerPeriodoActual, obtenerPeriodoSeleccionado } from "@/lib/periodo-seleccionado";
 import { extractoPendiente, UMBRAL_UTILIZACION_ALERTA } from "@/lib/domain/tarjetas";
+import { contarPorRevisar } from "@/lib/atajos-datos";
 import { createClient } from "@/lib/supabase/server";
 import { obtenerTarjetas } from "@/lib/tarjetas";
 import { obtenerDeudas, obtenerPrestamos, obtenerReembolsos } from "@/lib/deudas";
@@ -75,6 +77,7 @@ export default async function InicioPage() {
     paramsSalud,
     cargosTC,
     metas,
+    porRevisar,
   ] = await Promise.all([
     necesitaBienvenida(),
     obtenerObligacionesMes(fila.id),
@@ -113,6 +116,7 @@ export default async function InicioPage() {
     obtenerParametrosSalud(),
     obtenerCargosTarjetasMes(fila.id),
     obtenerMetas(),
+    contarPorRevisar(),
   ]);
 
   const r = resumen.data;
@@ -271,7 +275,8 @@ export default async function InicioPage() {
         </Card>
       ) : null}
 
-      {mesesSinCerrar.length > 0 ||
+      {porRevisar > 0 ||
+      mesesSinCerrar.length > 0 ||
       res.vencidas > 0 ||
       cerrado ||
       alertasTC.length + alertasDeudas.length + alertasPresupuesto.length > 0 ? (
@@ -281,6 +286,18 @@ export default async function InicioPage() {
               <LockIcon className="size-4 shrink-0" aria-hidden="true" /> {nombrePeriodo(periodo)} está cerrado (solo
               lectura).
             </p>
+          ) : null}
+          {porRevisar > 0 ? (
+            <Link
+              href="/movimientos?revisar=1"
+              className="flex items-center gap-2 rounded-xl bg-warning-soft px-4 py-3 text-sm font-semibold text-warning hover:underline"
+            >
+              <InboxIcon className="size-4 shrink-0" aria-hidden="true" />
+              {porRevisar === 1
+                ? "1 registro del iPhone espera revisión."
+                : `${porRevisar} registros del iPhone esperan revisión.`}
+              <span className="ml-auto">Revisar →</span>
+            </Link>
           ) : null}
           {res.vencidas > 0 && !cerrado ? (
             <Link

@@ -117,6 +117,8 @@ ingresosYgastos/
 7. Encabezados de seguridad en `next.config` (nosniff, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, HSTS; CSP estricta solo para `sw.js`). `robots.txt` y `noindex`: la app no se indexa.
 8. **Restauración de respaldo:** `restaurar_respaldo(json)` fuerza el `user_id` de la sesión y rechaza el archivo si alguna referencia apunta a datos de otro usuario; queda en la bitácora.
 
+9. **API de Atajos de iPhone (F8):** `/api/atajos/v1/*` no usa sesión ni secret key: el token personal (`Authorization: Bearer pc_…`, solo su sha256 en BD, revocable) lo validan las funciones `atajo_*` (security definer), que fijan el `user_id` y limitan la frecuencia. El token solo permite registrar, no leer saldos ni historial.
+
 ## 6. Tareas programadas (Vercel Cron)
 
 | Ruta | Programación (UTC) | Hora Bogotá | Qué hace |
